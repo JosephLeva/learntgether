@@ -1,0 +1,35 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "learntgetherReviewersInterface",
+  "sourceName": "contracts/learntgehterArticles.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_reviewerAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "_subjectName",
+          "type": "string"
+        }
+      ],
+      "name": "getReviewerCreds",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "creds",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

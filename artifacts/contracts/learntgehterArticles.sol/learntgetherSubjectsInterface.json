@@ -1,0 +1,116 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "learntgetherSubjectsInterface",
+  "sourceName": "contracts/learntgehterArticles.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_subjectName",
+          "type": "string"
+        }
+      ],
+      "name": "getNumberReviewsForAcceptance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_subjectName",
+          "type": "string"
+        }
+      ],
+      "name": "getSubjectConsensousTypes",
+      "outputs": [
+        {
+          "internalType": "string[]",
+          "name": "consenousTypes",
+          "type": "string[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_subjectName",
+          "type": "string"
+        }
+      ],
+      "name": "getSubjectExists",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_subjectName",
+          "type": "string"
+        }
+      ],
+      "name": "getSubjectReviewParams",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "numReviewsForAcceptance",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "credsNeededForReview",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "percentAcceptsNeeded",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_subjectName",
+          "type": "string"
+        }
+      ],
+      "name": "getSubjectReviewTime",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
