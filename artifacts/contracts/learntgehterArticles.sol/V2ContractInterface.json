@@ -27,16 +27,6 @@
         },
         {
           "internalType": "string",
-          "name": "subjectName",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "consensousType",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
           "name": "ipfsHash",
           "type": "string"
         },
