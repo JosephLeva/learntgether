@@ -14,36 +14,20 @@ contract learntgetherCommunities{
 
     struct Community  {
         address creator;
-        uint256 numReviewsForAcceptance;
-        uint256 credsNeededForReview;
-        uint256 percentAcceptsNeeded;
-        uint256 consenousTime;
-        string[] consenousTypes;
-        bool isInviteOnly; // if true only users with invites can join. Must be invited by the creator
-    }
-
-    struct CommunityProposalParam{
         uint256 minCredsToProposeVote;        // Minimum creds needed to propose a vote
         uint256 minCredsToVote;               // Minimum creds required to vote
         uint256 maxCredsCountedForVote;       // Maximum creds that can be counted for a vote
         uint256 minProposalVotes;
         uint256 proposalTime;
         uint256 proposalDelay;
-    }
+        bool isInviteOnly;    
+        }
+
     mapping(string => Community) public communities;
-    mapping(string => CommunityProposalParam) public communityProposalParams;
 
     string[] public CommunityNames;
 
 
-    struct communityProp{
-        uint256 numReviewsForAcceptance;
-        uint256 credsNeededForReview;
-        uint256 percentAcceptsNeeded;
-        uint256 consenousTime;
-        string[] consenousTypes;
-        bool isInviteOnly;
-    }
 
     struct ProposalProp{
         uint256 minCredsToProposeVote;        // Minimum creds needed to propose a vote
@@ -52,17 +36,18 @@ contract learntgetherCommunities{
         uint256 minProposalVotes;
         uint256 proposalTime;
         uint256 proposalDelay;
+        bool isInviteOnly;
     }
-    mapping(uint256=> communityProp) public communityParamProposals;
-    mapping(uint256=> ProposalProp) public propParamProposals;
+    mapping(uint256=> ProposalProp) public CommunityProposals;
 
 
+    uint256 maxProposalTime; // Variable used to set a maximum amount proposalTime can be
 
     struct Proposal {
         address proposer;
         string communityName;
         uint256 timestamp;
-        uint256 propType; // 1 for community 2 for proposal 3 for other (not used yet)
+        uint256 propType; // 1 for community 2 for Custom Proposals
         uint256 activeProposalsIndex;
         uint256 approveVotes;
         uint256 denyVotes;
@@ -79,33 +64,26 @@ contract learntgetherCommunities{
     uint256 proposalCounter;
     mapping(uint256=> Proposal) public proposals;
 
-    mapping(string=> uint256[]) public CommunityProposals;
-
     uint256[] ActiveProposals;
-    uint256 maxProposalTime;
-    uint256 maxConsenousTime;
 
     mapping(address=>bool)hasOpenProposal;
 
-
-
     address private owner;
     uint256 public fee;
+    address payable feeAddress;
 
     learntgetherMembersInterface public MemberContract;
 
-    // Mumbai 0x57A4a13b35d25EE78e084168aBaC5ad360252467
-
     uint256 public upkeepId;
-    constructor(uint256 _feePrice) {
+    constructor(uint256 _feePrice, address payable _feeAddress) {
         owner = msg.sender;
 
+        feeAddress = _feeAddress;
 
         fee = _feePrice;
 
         // Array Time Dependent variables set to 3 months by default can be changed by setters
         maxProposalTime = 7890000;
-        maxConsenousTime = 7890000;
 
         proposalCounter = 1;
         // ensure Nothing can get in the 0 array spot
@@ -120,18 +98,16 @@ contract learntgetherCommunities{
     }
 
     modifier proposalRequirements(string memory _communityName){
-
-     
         // Ensure the community exists
         require(communities[_communityName].creator != address(0), "Community doesn't exist");
         // Ensure the proposer does not have an open proposal
-        require(!hasOpenProposal[msg.sender], "User has Open Review, Please wait untill it is processed.");
+        require(!hasOpenProposal[tx.origin], "User has Open Review, Please wait untill it is processed.");
         // Ensure the proposer is a member of the communities and has enough creds
 
-        require(MemberContract.getIsMember(msg.sender, _communityName) == true, "You are not a member for this community.");
+        require(MemberContract.getIsMember(tx.origin, _communityName) == true, "You are not a member for this community.");
         //Make sure creds are enough to propose
         
-        require(MemberContract.getMemberCreds(msg.sender, _communityName) >= communityProposalParams[_communityName].minCredsToProposeVote, "Insufficient creds to propose.");
+        require(MemberContract.getMemberCreds(tx.origin, _communityName) >= communities[_communityName].minCredsToProposeVote, "Insufficient creds to propose.");
         // Ensure the proposer has paid the fee to cover upkeep 
 
         require(msg.value == fee, "Must send proposal fee");
@@ -140,18 +116,13 @@ contract learntgetherCommunities{
 
     // Events 
     
-    event CommunityCreated(string indexed communityName, address creator, uint256 consenousTime, bool isInviteOnly);
-    event CommunityInfo(string indexed communityName, uint256 numReviewsForAcceptance, uint256 credsNeededForReview, uint256 percentAcceptsNeeded);
-    event CommunityConesousTypes(string indexed communityName, string[]consenousTypes);
-    event CommunityProposalParams(string indexed communityName, uint256 minCredsToProposeVote, uint256 minCredsToVote, uint256 maxCredsCountedForVote, uint256 minProposalVotes, uint256 proposalTime, uint256 proposalDelay);  
-
+    event CommunityCreated(string indexed communityName, address creator, bool isInviteOnly);
+    event CommunityInfo(string indexed communityName, uint256 minCredsToProposeVote, uint256 minCredsToVote, uint256 maxCredsCountedForVote, uint256 minProposalVotes,uint256 proposalTime,uint256 proposalDelay,bool isInviteOnly );
+    event CommunityProposalParams(string indexed communityName, uint256 indexed proposalId, uint256 minCredsToProposeVote, uint256 minCredsToVote, uint256 maxCredsCountedForVote, uint256 minProposalVotes, uint256 proposalTime, uint256 proposalDelay, bool isInviteOnly);  
     event ProposalCreated(uint256 indexed proposalId, address indexed proposer, string indexed communityName, uint256 timestamp, uint256 propType);
-    event CommunityProposalCreated(uint256 indexed proposalId, uint256 numReviewsForAcceptance, uint256 credsNeededForReview, uint256 percentAcceptsNeeded, uint256 consenousTime, string[] consenousTypes, bool isInviteOnly);
-    event PropParamProposalCreated(uint256 indexed proposalId, uint256 minCredsToProposeVote, uint256 minCredsToVote, uint256 maxCredsCountedForVote, uint256 minProposalVotes, uint256 proposalTime, uint256 proposalDelay);
     event CustomProposalCreated(address indexed contractAddress, uint256 indexed proposalId, address indexed proposer);
     event Voted(uint256 indexed proposalId, address indexed voter, bool indexed voteChoice, uint256 credsToCount);
     event IndexChange(uint256 proposalId, uint256 activeProposalsIndex);
-        
     event ProposalResult(uint256 indexed proposalId, bool indexed passed);
     event CustomProposalResult(address indexed contractAddress, uint256 indexed proposalId, bool indexed passed);
 
@@ -169,63 +140,40 @@ contract learntgetherCommunities{
     */
     function createCommunity(
         string memory _communityName,
-        uint256 _numReviewsForAcceptance,
-        uint256 _credsNeededForReview,
-        uint256 _percentAcceptsNeeded,
-        uint256 _consenousTime,
-        string[] memory _consenousTypes,
-        bool _isInviteOnly,
         uint256 _minCredsToProposeVote,
         uint256 _minCredsToVote,
         uint256 _maxCredsCountedForVote,
         uint256 _minProposalVotes,
         uint256 _proposalTime,
-        uint256 _proposalDelay
+        uint256 _proposalDelay,
+        bool _isInviteOnly
     ) public  {
 
         // Ensure Community Does not exsist
 
         require(communities[_communityName].creator == address(0), "Community already exists.");
 
-
-        // Adjust our array time dependent variables to avoid clog 
-        if (_consenousTime > maxConsenousTime){
-            _consenousTime = maxConsenousTime;
-        }
-
         if (_proposalTime > maxProposalTime){
             _proposalTime = maxProposalTime;
         }
 
-
-        // Add communities community params
-
+        // Add Parameters
 
         communities[_communityName].creator = msg.sender;
-        communities[_communityName].numReviewsForAcceptance = _numReviewsForAcceptance;
-        communities[_communityName].credsNeededForReview = _credsNeededForReview;
-        communities[_communityName].percentAcceptsNeeded = _percentAcceptsNeeded;
-        communities[_communityName].consenousTime= _consenousTime;
-        communities[_communityName].consenousTypes = _consenousTypes;
+        communities[_communityName].minCredsToProposeVote = _minCredsToProposeVote;
+        communities[_communityName].minCredsToVote = _minCredsToVote;
+        communities[_communityName].maxCredsCountedForVote = _maxCredsCountedForVote;
+        communities[_communityName].minProposalVotes= _minProposalVotes;
+        communities[_communityName].proposalTime = _proposalTime;
+        communities[_communityName].proposalDelay = _proposalDelay;
+
         communities[_communityName].isInviteOnly = _isInviteOnly;
-
-
-
-        // Add commumnuity proposal params
-        communityProposalParams[_communityName].minCredsToProposeVote = _minCredsToProposeVote;
-        communityProposalParams[_communityName].minCredsToVote = _minCredsToVote;
-        communityProposalParams[_communityName].maxCredsCountedForVote = _maxCredsCountedForVote;
-        communityProposalParams[_communityName].minProposalVotes = _minProposalVotes;
-        communityProposalParams[_communityName].proposalTime = _proposalTime;
-        communityProposalParams[_communityName].proposalDelay = _proposalDelay;
 
 
         CommunityNames.push(_communityName);
         
-        emit CommunityCreated(_communityName, msg.sender, _consenousTime, _isInviteOnly);
-        emit CommunityInfo(_communityName, _numReviewsForAcceptance, _credsNeededForReview, _percentAcceptsNeeded);
-        emit CommunityConesousTypes(_communityName, _consenousTypes);
-        emit CommunityProposalParams(_communityName, _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _proposalTime, _proposalDelay);
+        emit CommunityCreated(_communityName, msg.sender, _isInviteOnly);
+        emit CommunityInfo(_communityName, _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _proposalTime, _proposalDelay, _isInviteOnly);
 
 
     }
@@ -256,59 +204,7 @@ contract learntgetherCommunities{
 
     }
 
-  
-    /* 
-    * @notice Proposes changes to a communities's parameters. (Type 1)
-    * @dev Ensures the communities exists and the proposer meets the requirements. Must Approve LinkFee to Contract before calling.
-    * @param _communityName Name of the communities to be updated.
-    * @param _numReviewsForAcceptance Number of reviews required for acceptance.
-    * @param _credsNeededForReview Creds required for a review.
-    * @param _percentAcceptsNeeded Percentage of accepts needed.
-    * @param _consenousTime Amount of time for consensus to be reached.
-    * @param _consenousTypes Types of consensus to be used.
-    * @param _isInviteOnly Boolean indicating if the communities is invite only.
-    * @return proposalId ID of the proposal.
-    */
 
-    function communityProposal(     
-        string memory _communityName,   
-        uint256 _numReviewsForAcceptance,
-        uint256 _credsNeededForReview,
-        uint256 _percentAcceptsNeeded,
-        uint256 _consenousTime,
-        string[] memory _consenousTypes,
-        bool _isInviteOnly
-        ) external payable proposalRequirements(_communityName) returns(uint256){
-
-
-        // Create a new proposal using the proposalCounter as an ID
-        communityProp storage comProp = communityParamProposals[proposalCounter];
-
-        // Adjust our array time dependent variables to avoid clog 
-        if (_consenousTime > maxConsenousTime){
-            _consenousTime = maxConsenousTime;
-        }
-
-        // create our generic proposal
-        createProposal(_communityName, 1);
-
-        comProp.numReviewsForAcceptance = _numReviewsForAcceptance;
-        comProp.credsNeededForReview = _credsNeededForReview;
-        comProp.percentAcceptsNeeded = _percentAcceptsNeeded;
-        comProp.consenousTime= _consenousTime;
-        comProp.consenousTypes = _consenousTypes;
-        comProp.isInviteOnly = _isInviteOnly;
-
-        hasOpenProposal[msg.sender]= true;
-        ActiveProposals.push(proposalCounter);
-        CommunityProposals[_communityName].push(proposalCounter);
-
-        emit CommunityProposalCreated(proposalCounter, _numReviewsForAcceptance, _credsNeededForReview, _percentAcceptsNeeded, _consenousTime, _consenousTypes, _isInviteOnly);
-        
-        // Increment the proposalCounter
-        proposalCounter++;  
-        return proposalCounter-1;
-    }
 
     /*
     * @notice Proposes changes to a communities's parameters. (Type 2)
@@ -323,37 +219,42 @@ contract learntgetherCommunities{
     * @return proposalId ID of the proposal.
     */
 
-    function PropParamProposal(
+    function CommunityProposal(
         string memory _communityName,
         uint256 _minCredsToProposeVote,
         uint256 _minCredsToVote,
         uint256 _maxCredsCountedForVote,
         uint256 _minProposalVotes,
         uint256 _proposalTime,
-        uint256 _proposalDelay
+        uint256 _proposalDelay,
+        bool _isInviteOnly
      ) external payable proposalRequirements(_communityName) returns(uint256){
         // Create a new proposal using the proposalCounter as an ID
-        ProposalProp storage ppProp = propParamProposals[proposalCounter];
+        ProposalProp storage pProp = CommunityProposals[proposalCounter];
 
         // Adjust our array time dependent variables to avoid clog 
         if (_proposalTime > maxProposalTime){
             _proposalTime = maxProposalTime;
         }
         // create our generic proposal
-        createProposal(_communityName, 2);
+        createProposal(_communityName, 1);
 
-        ppProp.minCredsToProposeVote = _minCredsToProposeVote;
-        ppProp.minCredsToVote = _minCredsToVote;
-        ppProp.maxCredsCountedForVote = _maxCredsCountedForVote;
-        ppProp.minProposalVotes = _minProposalVotes;
-        ppProp.proposalTime = _proposalTime;
-        ppProp.proposalDelay = _proposalDelay;
+        pProp.minCredsToProposeVote = _minCredsToProposeVote;
+        pProp.minCredsToVote = _minCredsToVote;
+        pProp.maxCredsCountedForVote = _maxCredsCountedForVote;
+        pProp.minProposalVotes = _minProposalVotes;
+        pProp.proposalTime = _proposalTime;
+        pProp.proposalDelay = _proposalDelay;
+        pProp.isInviteOnly = _isInviteOnly;
 
-        emit PropParamProposalCreated(proposalCounter, _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _proposalTime, _proposalDelay);
+        emit CommunityProposalParams(_communityName, proposalCounter, _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _proposalTime, _proposalDelay, _isInviteOnly);
         
+        // Send Fee to appropriate Address
+        (bool _sent, ) = feeAddress.call{value: msg.value}("");
+        require(_sent, "Failed to send Ether");
+
         hasOpenProposal[msg.sender]= true;
         ActiveProposals.push(proposalCounter);
-        CommunityProposals[_communityName].push(proposalCounter);
         
         // Increment the proposalCounter
         proposalCounter++;  
@@ -369,19 +270,25 @@ contract learntgetherCommunities{
     * @return proposalId ID of the proposal.
     */
 
+     // We use tx.orgin here instead of msg.sender because this can be called by a contract and we want to track the user who called the contract
+
     function CustomProposal(
         string memory _communityName,
         address _contractAddress
     )external payable proposalRequirements(_communityName) returns(uint256){
         // create our generic proposal
-        createProposal(_communityName, 3);
+        createProposal(_communityName, 2);
 
         // Set the external contract address so 3rd party upkeeps can keep track of it
         CustomProposals[proposalCounter] = _contractAddress;
 
-        emit CustomProposalCreated(_contractAddress, proposalCounter, msg.sender);
+        emit CustomProposalCreated(_contractAddress, proposalCounter, tx.origin);
         
-        hasOpenProposal[msg.sender]= true;
+        // Send Fee to appropriate Address
+        (bool _sent, ) = feeAddress.call{value: msg.value}("");
+        require(_sent, "Failed to send Ether");
+
+        hasOpenProposal[tx.origin]= true;
         ActiveProposals.push(proposalCounter);
         
         // Increment the proposalCounter
@@ -410,7 +317,7 @@ contract learntgetherCommunities{
         require(proposal.isActive == true, "Proposal is no longer Active");
         
         // Before delay period after experation
-        require (block.timestamp >= proposal.timestamp + communityProposalParams[proposal.communityName].proposalDelay && block.timestamp <= proposal.timestamp+ communityProposalParams[proposal.communityName].proposalDelay + communityProposalParams[proposal.communityName].proposalTime, "Not Active Voting Time");
+        require (block.timestamp >= proposal.timestamp + communities[proposal.communityName].proposalDelay && block.timestamp <= proposal.timestamp+ communities[proposal.communityName].proposalDelay + communities[proposal.communityName].proposalTime, "Not Active Voting Time");
 
         // Ensure the voter is a member for the communities
         require(MemberContract.getIsMember(msg.sender, proposal.communityName) == true, "You are not a member of this community.");
@@ -422,11 +329,11 @@ contract learntgetherCommunities{
         // Ensure the voter has more creds than the minCredsToVote
         uint256 voterCreds = MemberContract.getMemberCreds(msg.sender, proposal.communityName);
 
-        require(voterCreds >= communityProposalParams[proposal.communityName].minCredsToVote, "Insufficient creds to vote.");
+        require(voterCreds >= communities[proposal.communityName].minCredsToVote, "Insufficient creds to vote.");
 
 
         // Determine the amount of creds to count for the vote
-        uint256 credsToCount = (voterCreds > communityProposalParams[proposal.communityName].maxCredsCountedForVote) ? communityProposalParams[proposal.communityName].maxCredsCountedForVote : voterCreds;
+        uint256 credsToCount = (voterCreds > communities[proposal.communityName].maxCredsCountedForVote) ? communities[proposal.communityName].maxCredsCountedForVote : voterCreds;
         
 
         if (voteChoice) {
@@ -468,7 +375,7 @@ contract learntgetherCommunities{
         for (uint256 i=1; i < ActiveProposals.length; i++){
              
             // Time of proposal + Amount of time for delay + amoubnt of time proposal active
-            uint256 voteEnd= proposals[ActiveProposals[i]].timestamp + communityProposalParams[proposals[ActiveProposals[i]].communityName].proposalDelay + communityProposalParams[proposals[ActiveProposals[i]].communityName].proposalTime;
+            uint256 voteEnd= proposals[ActiveProposals[i]].timestamp + communities[proposals[ActiveProposals[i]].communityName].proposalDelay + communities[proposals[ActiveProposals[i]].communityName].proposalTime;
 
             if( voteEnd <= block.timestamp && (voteEnd <= lowestVoteEnd || lowestVoteEnd == 0)){
                 upkeepNeeded = true;
@@ -493,7 +400,7 @@ contract learntgetherCommunities{
     function performUpkeep(bytes calldata _performData) external {
         uint256 proposalId= abi.decode(_performData, (uint256));
 
-        uint256 voteEnd= proposals[proposalId].timestamp + communityProposalParams[proposals[proposalId].communityName].proposalDelay + communityProposalParams[proposals[proposalId].communityName].proposalTime;
+        uint256 voteEnd= proposals[proposalId].timestamp + communities[proposals[proposalId].communityName].proposalDelay + communities[proposals[proposalId].communityName].proposalTime;
 
         // Proposal Id should never be 0 because we start the counter at 1, it should be after the vote end, and vote end shouldnt be 0 (someone  put in an id that isnt used yet)
         if ( proposalId != 0 && voteEnd <= block.timestamp  && voteEnd != 0){
@@ -501,34 +408,23 @@ contract learntgetherCommunities{
             Proposal storage proposalToCheck = proposals[proposalId];
             
             // Check if the proposal has more approve votes than deny votes and more approve creds than deny creds or both cred amounts are 0 (when maxCredsCountedForVote is set to 0)
-            if ( (proposalToCheck.approveVotes > proposalToCheck.denyVotes) && (proposalToCheck.approveCreds > proposalToCheck.denyCreds || communityProposalParams[proposalToCheck.communityName].maxCredsCountedForVote == 0 ) && (proposalToCheck.approveVotes + proposalToCheck.denyVotes >= communityProposalParams[proposalToCheck.communityName].minProposalVotes) ){
+            if ( (proposalToCheck.approveVotes > proposalToCheck.denyVotes) && (proposalToCheck.approveCreds > proposalToCheck.denyCreds || communities[proposalToCheck.communityName].maxCredsCountedForVote == 0 ) && (proposalToCheck.approveVotes + proposalToCheck.denyVotes >= communities[proposalToCheck.communityName].minProposalVotes) ){
                 // Update the communities's variables with the proposal's values
-                if (proposalToCheck.propType ==3) {
+                if (proposalToCheck.propType ==2) {
                     emit CustomProposalResult(CustomProposals[proposalId], proposalId, true);
                 }
                 else if(proposalToCheck.propType ==1){
-
+                        
                     Community storage communityToUpdate = communities[proposalToCheck.communityName];
 
-                    communityToUpdate.numReviewsForAcceptance = communityParamProposals[proposalId].numReviewsForAcceptance;
-                    communityToUpdate.credsNeededForReview = communityParamProposals[proposalId].credsNeededForReview;
-                    communityToUpdate.percentAcceptsNeeded = communityParamProposals[proposalId].percentAcceptsNeeded;
-                    communityToUpdate.consenousTime = communityParamProposals[proposalId].consenousTime;
-                    communityToUpdate.consenousTypes = communityParamProposals[proposalId].consenousTypes;
-                    communityToUpdate.isInviteOnly = communityParamProposals[proposalId].isInviteOnly;
-                }
-                else if(proposalToCheck.propType ==2){
-                        
-                    CommunityProposalParam storage communityProposalToUpdate = communityProposalParams[proposalToCheck.communityName];
-
-                    communityProposalToUpdate.minCredsToProposeVote = propParamProposals[proposalId].minCredsToProposeVote;
-                    communityProposalToUpdate.minCredsToVote = propParamProposals[proposalId].minCredsToVote;
-                    communityProposalToUpdate.maxCredsCountedForVote = propParamProposals[proposalId].maxCredsCountedForVote;
-                    communityProposalToUpdate.minProposalVotes = propParamProposals[proposalId].minProposalVotes;
-                    communityProposalToUpdate.proposalTime = propParamProposals[proposalId].proposalTime;
-                    communityProposalToUpdate.proposalDelay = propParamProposals[proposalId].proposalDelay;
-                    
-
+                    communityToUpdate.minCredsToProposeVote = CommunityProposals[proposalId].minCredsToProposeVote;
+                    communityToUpdate.minCredsToVote = CommunityProposals[proposalId].minCredsToVote;
+                    communityToUpdate.maxCredsCountedForVote = CommunityProposals[proposalId].maxCredsCountedForVote;
+                    communityToUpdate.minProposalVotes = CommunityProposals[proposalId].minProposalVotes;
+                    communityToUpdate.proposalTime = CommunityProposals[proposalId].proposalTime;
+                    communityToUpdate.proposalDelay = CommunityProposals[proposalId].proposalDelay;
+                    communityToUpdate.isInviteOnly = CommunityProposals[proposalId].isInviteOnly;
+                
                 }
 
 
@@ -540,13 +436,13 @@ contract learntgetherCommunities{
                  proposals[proposalId].passed = false;
                 emit ProposalResult(proposalId, false);
 
-                if (proposalToCheck.propType ==3) {
+                if (proposalToCheck.propType ==2) {
                     emit CustomProposalResult(CustomProposals[proposalId], proposalId, false);
                 }
 
             }
             //Allow user to propose again
-            hasOpenProposal[proposalToCheck.proposer]= true;
+            hasOpenProposal[proposalToCheck.proposer]= false;
 
             // Set proposal to inactive
             proposals[proposalId].isActive = false;
@@ -591,7 +487,7 @@ contract learntgetherCommunities{
         uint256 index = proposals[_propId].activeProposalsIndex;
 
         // Avoid the for loop if somehow the list is empty (we dont want to do anything anyway)
-        require(ActiveProposals.length > 0, "There are no active Proposals");
+        require(ActiveProposals.length > 1, "There are no active Proposals");
 
         // check if index is last in array
         if (index != ActiveProposals.length -1) {
@@ -655,8 +551,9 @@ contract learntgetherCommunities{
        maxProposalTime= _mpt;
 
     }
-    function setMaxConsenousTime(uint256 _mrt) external onlyOwner {
-       maxConsenousTime= _mrt;
+
+    function setFeeAddress(address payable _feeAddress) external onlyOwner {
+       feeAddress= _feeAddress;
 
     }
 
@@ -667,33 +564,10 @@ contract learntgetherCommunities{
         return communities[_communityName].creator != address(0);
 
     }
-    function getCommunityConsensousTime(string memory _communityName) external view returns (uint256 consenousTime){
+    function getCommunityInfo(string memory _communityName) external view returns (uint256 minCredsToProposeVote, uint256 minCredsToVote, uint256 maxCredsCountedForVote, uint256 minProposalVotes,uint256 proposalTime,uint256 proposalDelay,bool isInviteOnly){
         require(communities[_communityName].creator!= address(0), "Community Does Not Exsist");
-        return communities[_communityName].consenousTime;
-
-    }
-    function getCommunityConsensousTypes (string memory _communityName) external view returns (string[]memory consenousTypes){
-        require(communities[_communityName].creator!= address(0), "Community Does Not Exsist");
-        return communities[_communityName].consenousTypes;
-
-    }
-    function getCommunityReviewParams (string memory _communityName) external view returns (uint256 numReviewsForAcceptance,uint256 credsNeededForReview,uint256 percentAcceptsNeeded){
-            require(communities[_communityName].creator!= address(0), "Community Does Not Exsist");
-            return(communities[_communityName].numReviewsForAcceptance, communities[_communityName].credsNeededForReview, communities[_communityName].percentAcceptsNeeded);
-    }
-    function getCommunityInfo(string memory _communityName) external view returns (uint256 numReviewsForAcceptance,uint256 credsNeededForReview,uint256 percentAcceptsNeeded, uint256 consenousTime, string[] memory consenousTypes){
-        require(communities[_communityName].creator!= address(0), "Community Does Not Exsist");
-        return(communities[_communityName].numReviewsForAcceptance, communities[_communityName].credsNeededForReview, communities[_communityName].percentAcceptsNeeded, communities[_communityName].consenousTime, communities[_communityName].consenousTypes);
+        return( communities[_communityName].minCredsToProposeVote, communities[_communityName].minCredsToVote, communities[_communityName].maxCredsCountedForVote, communities[_communityName].minProposalVotes, communities[_communityName].proposalTime, communities[_communityName].proposalDelay, communities[_communityName].isInviteOnly);
     
-    }
-    function getCommunityProposalInfo(string memory _communityName) external view returns (uint256 minCredsToProposeVote,uint256 minCredsToVote,uint256 maxCredsCountedForVote, uint256 minProposalVotes, uint256 proposalTime, uint256 proposalDelay){
-        require(communities[_communityName].creator!= address(0), "Community Does Not Exsist");
-        return(communityProposalParams[_communityName].minCredsToProposeVote, communityProposalParams[_communityName].minCredsToVote, communityProposalParams[_communityName].maxCredsCountedForVote, communityProposalParams[_communityName].minProposalVotes, communityProposalParams[_communityName].proposalTime, communityProposalParams[_communityName].proposalDelay);
-    }
-    function getPoroposalConesnous(uint256 _proposalId) external view returns (string[]memory consenousTypes){
-            require(proposals[_proposalId].propType!= 1, "Proposal Does Not Exsist or is not the Right Type");
-            return communityParamProposals[_proposalId].consenousTypes;
-
     }
 
     function getProposalVote(address _address, uint256 _proposalId ) external view returns (uint256 approveVotes, uint256 approveCreds, uint256 denyVotes, uint256 denyCreds, bool ) {
@@ -712,54 +586,29 @@ contract learntgetherCommunities{
     function getActiveProposalIndex(uint256 _propId)external view returns(uint256){
         return(proposals[_propId].activeProposalsIndex);
     }
-    function getNumberReviewsForAcceptance( string memory _communityName) external view returns(uint256){
-        return communities[_communityName].numReviewsForAcceptance ;
-    }
+
     function getCommunityOwner(string memory _communityName) external view returns (address){
         require(communities[_communityName].creator!= address(0), "Community Does Not Exsist");
         return communities[_communityName].creator;
     }
-    function getCommunityIsOwner(string memory _communityName) external view returns (bool){
+    function getCommunityIsOwner(string memory _communityName, address _add) external view returns (bool){
         require(communities[_communityName].creator!= address(0), "Community Does Not Exsist");
-        return communities[_communityName].isInviteOnly;
+        return communities[_communityName].creator == _add ;
     }
     function getCommunityIsInviteOnly(string memory _communityName) external view returns(bool){
         require(communities[_communityName].creator!= address(0), "Community Does Not Exsist");
         return communities[_communityName].isInviteOnly;
     }
+    
 
     function getProposalType(uint256 _proposalId) external view returns(uint256){
         return proposals[_proposalId].propType;
     }
-    function getCommunityProposal(uint256 _proposalId) external view returns(uint256 numReviewsForAcceptance,uint256 credsNeededForReview,uint256 percentAcceptsNeeded, uint256 consenousTime, string[] memory consenousTypes, bool isInviteOnly){
-        require(this.getProposalType(_proposalId) == 1, "Proposal is not a community proposal");
-        return (communityParamProposals[_proposalId].numReviewsForAcceptance, communityParamProposals[_proposalId].credsNeededForReview, communityParamProposals[_proposalId].percentAcceptsNeeded, communityParamProposals[_proposalId].consenousTime, communityParamProposals[_proposalId].consenousTypes, communityParamProposals[_proposalId].isInviteOnly);
+    
+    function getFee() external view returns(uint256){
+        return fee;
     }
-
-
-    function getPropParamProposal(uint256 _proposalId) external view returns(uint256 minCredsToProposeVote,uint256 minCredsToVote,uint256 maxCredsCountedForVote, uint256 minProposalVotes, uint256 proposalTime, uint256 proposalDelay){
-        require(this.getProposalType(_proposalId) == 2, "Proposal is not a Prop Param proposal");
-        return (propParamProposals[_proposalId].minCredsToProposeVote, propParamProposals[_proposalId].minCredsToVote, propParamProposals[_proposalId].maxCredsCountedForVote, propParamProposals[_proposalId].minProposalVotes, propParamProposals[_proposalId].proposalTime, propParamProposals[_proposalId].proposalDelay);
-    }
-
-    function getCustomProposal(uint256 _proposalId) external view returns(address){
-        require(this.getProposalType(_proposalId) == 3, "Proposal is not a Custom proposal");
-        return (CustomProposals[_proposalId]);
-    }
-
-
-
-    // DEVONLY DO Not Use These Functions in Produciton Ensure they are Removed or Commented Out 
-
-    // function setCommunityProposalTime(string memory _communityName,uint256 _pt) external onlyOwner {
-    //    communityProposalParams[_communityName].proposalTime = _pt;
-
-    // }
-    // function setCommunityConsenousTime(string memory _communityName,uint256 _rt) external onlyOwner {
-    //    communities[_communityName].consemnousTime = _rt;
-
-    // }
-
+ 
 
 
 

@@ -873,44 +873,6 @@
         "learntgetherSubjectsInterface"
       ]
     },
-    "/Users/joeleva/dev2/gitl/learntgether/contracts/MockAutomationContract.sol": {
-      "lastModificationDate": 1695942545701,
-      "contentHash": "7a7badb74e75d6ede3961d2110f74907",
-      "sourceName": "contracts/MockAutomationContract.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 100
-          },
-          "viaIR": true,
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "../node_modules/@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol"
-      ],
-      "versionPragmas": [
-        "^0.8.0"
-      ],
-      "artifacts": [
-        "MockAutomationContract"
-      ]
-    },
     "/Users/joeleva/dev2/gitl/learntgether/node_modules/@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol": {
       "lastModificationDate": 1695942166149,
       "contentHash": "da5a0c3bd86c896f6a407f909c57edf3",
@@ -1473,8 +1435,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/learntgetherMembers.sol": {
-      "lastModificationDate": 1699678455596,
-      "contentHash": "74c04aed1aaca452a1386886d695ca6b",
+      "lastModificationDate": 1702524589567,
+      "contentHash": "bee0ba15485547beed0cb597199bdf0b",
       "sourceName": "contracts/learntgetherMembers.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1512,8 +1474,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/learntgetherCommunities.sol": {
-      "lastModificationDate": 1702257209152,
-      "contentHash": "d10f0035701ea411f241cf632789f855",
+      "lastModificationDate": 1704998204603,
+      "contentHash": "9bf23e5fb6a7460b3cbdbed0ddf5a816",
       "sourceName": "contracts/learntgetherCommunities.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1550,45 +1512,9 @@
         "learntgetherMembersInterface"
       ]
     },
-    "/Users/joeleva/dev2/gitl/learntgether/contracts/MockLinkToken.sol": {
-      "lastModificationDate": 1695942545701,
-      "contentHash": "03148373d4718060c3d3adeb276e5a84",
-      "sourceName": "contracts/MockLinkToken.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 100
-          },
-          "viaIR": true,
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.0"
-      ],
-      "artifacts": [
-        "MockLinkToken"
-      ]
-    },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/learntgehterPosts.sol": {
-      "lastModificationDate": 1702268034766,
-      "contentHash": "e58155802fa7660cdb75b8f4dac4d31c",
+      "lastModificationDate": 1705103697787,
+      "contentHash": "ef4a325dd0ac3b80a9cf8997212c57d9",
       "sourceName": "contracts/learntgehterPosts.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1617,8 +1543,6 @@
       "imports": [
         "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol",
         "@openzeppelin/contracts/utils/Counters.sol",
-        "@openzeppelin/contracts/access/Ownable.sol",
-        "../node_modules/@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol",
         "hardhat/console.sol"
       ],
       "versionPragmas": [
@@ -1626,9 +1550,127 @@
       ],
       "artifacts": [
         "V2ContractInterface",
-        "learntgetherCommunitiesInterface",
-        "learntgetherMembersInterface",
         "learntgetherPosts"
+      ]
+    },
+    "/Users/joeleva/dev2/gitl/learntgether/contracts/learntgehterPostConsensus.sol": {
+      "lastModificationDate": 1705103983724,
+      "contentHash": "dd7f72cccaf6de7c58a3a993bd304d49",
+      "sourceName": "contracts/learntgehterPostConsensus.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "viaIR": true,
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol",
+        "@openzeppelin/contracts/utils/Counters.sol",
+        "hardhat/console.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "learntgetherCommunityConsensusInterface",
+        "learntgetherMembersInterface",
+        "learntgetherPostConsensus",
+        "learntgetherPostsInterface"
+      ]
+    },
+    "/Users/joeleva/dev2/gitl/learntgether/contracts/learntgetherMemberInfo.sol": {
+      "lastModificationDate": 1704934437018,
+      "contentHash": "486a9bd79e1ed26eda9a3d2986118667",
+      "sourceName": "contracts/learntgetherMemberInfo.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "viaIR": true,
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "hardhat/console.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "learntgetherMembersInfo"
+      ]
+    },
+    "/Users/joeleva/dev2/gitl/learntgether/contracts/learntgetherCommunityConsensus.sol": {
+      "lastModificationDate": 1705102836937,
+      "contentHash": "731946210354c4f1b9f1f34fce002697",
+      "sourceName": "contracts/learntgetherCommunityConsensus.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "viaIR": true,
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "hardhat/console.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "learntgetherCommunityConsensus",
+        "learntgtetherCommuunitiesInterfact"
       ]
     }
   }

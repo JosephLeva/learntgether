@@ -5,7 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
  
+
+## [0.0.2] - 2024-01-12
  
+### Added
+- Endpoint to Member info -> to add a link to X or other platforms for users
+### Changed
+- Split Members contract into Members and Member Info contracts to shorten length
+- Community Parameters now define proposals params rather than consensus params
+- Community Contract Split into Communities and Community Consenous
+    - Community Conesnous now uses Custom Proposal Logic
+- Changed from 3 to 2 Proposal Types 
+    - Community Proposals => Edit Proposal Params
+    - Custom Proposal -> Proposals by other contracts
+- Post Contract Split into Post and Post Consenous to go below contract size limit
+### Fixed
+- The Spelling of Consensus
+
+
 ## [0.0.2] - 2023-11-31
  
 ### Added

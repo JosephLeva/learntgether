@@ -2,18 +2,13 @@ const { expect } = require("chai");
 
 const communityName = "Cryptogrphy";
 const InviteOnlyCommunityName= "SuperSecretCrpytogrphy";
-const numReviewsForAcceptance = 1;
-const credsNeededForReview = 1;
-const percentAcceptsNeeded = 50;
-const consenousTime= 2630000
-const consenousTypes = ["Hello", "World"]
-const isInviteOnly = false;
 const minCredsToProposeVote = 1;
 const minCredsToVote = 1;
 const maxCredsCountedForVote = 10;
 const minProposalVotes = 1;
 const proposalTime = 2630000;
 const proposalDelay= 604800
+const isInviteOnly = false;
 
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 
@@ -38,7 +33,7 @@ describe("Learntgether Reviewers Contract", function() {
     await ltgm.deployed();
 
     const LearntgetherCom = await ethers.getContractFactory("learntgetherCommunities");
-    ltgc = await LearntgetherCom.deploy(mockFeePrice);
+    ltgc = await LearntgetherCom.deploy(mockFeePrice, owner.address);
     await ltgc.deployed();
     
     
@@ -46,37 +41,11 @@ describe("Learntgether Reviewers Contract", function() {
 
 
 
-    await ltgc.connect(owner).createCommunity(
-      communityName,
-      numReviewsForAcceptance,
-      credsNeededForReview,
-      percentAcceptsNeeded,
-      consenousTime,
-      consenousTypes,
-      isInviteOnly,
-      minCredsToProposeVote,
-      minCredsToVote,
-      maxCredsCountedForVote,
-      minProposalVotes,
-      proposalTime,
-      proposalDelay
-    );
+    await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime,  proposalDelay, isInviteOnly);
 
-    await ltgc.connect(owner).createCommunity(
-      InviteOnlyCommunityName,
-      numReviewsForAcceptance,
-      credsNeededForReview,
-      percentAcceptsNeeded,
-      consenousTime,
-      consenousTypes,
-      true, // invite only
-      minCredsToProposeVote,
-      minCredsToVote,
-      maxCredsCountedForVote,
-      minProposalVotes,
-      proposalTime,
-      proposalDelay
-    );
+
+    await ltgc.connect(owner).createCommunity(InviteOnlyCommunityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime,  proposalDelay, !isInviteOnly);
+
     const communitySaved = await ltgc.getCommunityExists(communityName)
     expect(communitySaved).to.be.true
 
@@ -196,20 +165,6 @@ describe("Learntgether Reviewers Contract", function() {
   
 
    });
-
-   describe('Add Member Info', async () => {
-
-    it("Should add member info", async function() {
-      await ltgm.connect(addr1).updateMemberInfo("Joe", "Joe is testing if the description works", ["SUNY Geneseo Math", "Some Other Degree"], ['Im so certified', "the most"]);
-      const[ myName, myDescription, myDegrees, myCerts] = await ltgm.connect(owner).getMemberInfo(addr1.address)
-      expect(myName).to.equal("Joe");
-      expect(myDescription).to.equal("Joe is testing if the description works");
-      expect(myDegrees).to.deep.equal(["SUNY Geneseo Math", "Some Other Degree"]);
-      expect(myCerts).to.deep.equal(["Im so certified", "the most"]);
-    });
-  
-   });
-
 
    describe('Add Positive Cred', async () => {
     beforeEach(async function() {
