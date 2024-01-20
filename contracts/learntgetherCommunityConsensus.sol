@@ -265,14 +265,6 @@ contract learntgetherCommunityConsensus{
 
 
 
-    /*
-        * @notice Allows a member to cancel a proposal. 
-        * @dev Ensures the proposal exists and the member is the proposer.
-        * @param _propId ID of the proposal to cancel.
-    */
-
-
-
     // Helper Functions
     function bytes32ToAddress(bytes32 _address) public pure returns (address) {
         return address(uint160(uint256(_address)));

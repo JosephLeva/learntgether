@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "hardhat/console.sol";
 
 
 
@@ -22,7 +21,7 @@ interface learntgetherPostsInterface{
     function getPostExists(uint256 _postId) external view returns(bool);
 }
 
-contract learntgetherPostConsensus {
+contract learntgetherPostConsensus{
 
     struct CommunitySubmission{
         string communityName;
@@ -259,7 +258,7 @@ contract learntgetherPostConsensus {
         * @return upkeepNeeded Boolean indicating if upkeep is needed.
         * @return performData bytes object cast from uint256 id for the lowest timestamp post where review periord has ended
     */
-    function checkUpKeep()  external view  returns( bool upkeepNeeded, bytes memory  performData  ){
+    function checkUpkeep()  external view  returns( bool upkeepNeeded, bytes memory  performData  ){
         upkeepNeeded = false;
         uint256 lowestId= 0;
         int256 sendId = 0;
