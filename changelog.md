@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - We can now directly view all proposals for a community
     - this is done though a seperate porposalsByCommunity mapping
 ### Changed
-- Split Members contract into Members and Member Info contracts to shorten length
+
 ### Fixed
 
 ## [0.0.2] - 2024-01-12
