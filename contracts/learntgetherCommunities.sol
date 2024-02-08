@@ -18,6 +18,7 @@ contract learntgetherCommunities{
         uint256 minCredsToVote;               // Minimum creds required to vote
         uint256 maxCredsCountedForVote;       // Maximum creds that can be counted for a vote
         uint256 minProposalVotes;
+        address memberAccessContract;          // For Advanced Use * allows for a contract to control member access * should be audited and tested before *
         uint256 proposalTime;
         uint256 proposalDelay;
         bool isInviteOnly;    
@@ -34,6 +35,7 @@ contract learntgetherCommunities{
         uint256 minCredsToVote;               // Minimum creds required to vote
         uint256 maxCredsCountedForVote;       // Maximum creds that can be counted for a vote
         uint256 minProposalVotes;
+        address memberAccessContract;              // For Advanced Use * allows for a contract to control cred access * should be audited and tested before 
         uint256 proposalTime;
         uint256 proposalDelay;
         bool isInviteOnly;
@@ -65,7 +67,7 @@ contract learntgetherCommunities{
     mapping(uint256=> Proposal) public proposals;
 
     uint256[] ActiveProposals;
-
+    mapping(string => uint256[]) public porposalsByCommunity;
     mapping(address=>bool)hasOpenProposal;
 
     address private owner;
@@ -117,8 +119,8 @@ contract learntgetherCommunities{
     // Events 
     
     event CommunityCreated(string indexed communityName, address creator, bool isInviteOnly);
-    event CommunityInfo(string indexed communityName, uint256 minCredsToProposeVote, uint256 minCredsToVote, uint256 maxCredsCountedForVote, uint256 minProposalVotes,uint256 proposalTime,uint256 proposalDelay,bool isInviteOnly );
-    event CommunityProposalParams(string indexed communityName, uint256 indexed proposalId, uint256 minCredsToProposeVote, uint256 minCredsToVote, uint256 maxCredsCountedForVote, uint256 minProposalVotes, uint256 proposalTime, uint256 proposalDelay, bool isInviteOnly);  
+    event CommunityInfo(string indexed communityName, uint256 minCredsToProposeVote, uint256 minCredsToVote, uint256 maxCredsCountedForVote, uint256 minProposalVotes,address memberAccessContract, uint256 proposalTime,uint256 proposalDelay,bool isInviteOnly );
+    event CommunityProposalParams(string indexed communityName, uint256 indexed proposalId, uint256 minCredsToProposeVote, uint256 minCredsToVote, uint256 maxCredsCountedForVote, uint256 minProposalVotes, address memberAccessContract, uint256 proposalTime, uint256 proposalDelay, bool isInviteOnly);  
     event ProposalCreated(uint256 indexed proposalId, address indexed proposer, string indexed communityName, uint256 timestamp, uint256 propType);
     event CustomProposalCreated(address indexed contractAddress, uint256 indexed proposalId, address indexed proposer);
     event Voted(uint256 indexed proposalId, address indexed voter, bool indexed voteChoice, uint256 credsToCount);
@@ -144,6 +146,7 @@ contract learntgetherCommunities{
         uint256 _minCredsToVote,
         uint256 _maxCredsCountedForVote,
         uint256 _minProposalVotes,
+        address _memberAccessContract,
         uint256 _proposalTime,
         uint256 _proposalDelay,
         bool _isInviteOnly
@@ -164,6 +167,7 @@ contract learntgetherCommunities{
         communities[_communityName].minCredsToVote = _minCredsToVote;
         communities[_communityName].maxCredsCountedForVote = _maxCredsCountedForVote;
         communities[_communityName].minProposalVotes= _minProposalVotes;
+        communities[_communityName].memberAccessContract= _memberAccessContract;
         communities[_communityName].proposalTime = _proposalTime;
         communities[_communityName].proposalDelay = _proposalDelay;
 
@@ -173,7 +177,7 @@ contract learntgetherCommunities{
         CommunityNames.push(_communityName);
         
         emit CommunityCreated(_communityName, msg.sender, _isInviteOnly);
-        emit CommunityInfo(_communityName, _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _proposalTime, _proposalDelay, _isInviteOnly);
+        emit CommunityInfo(_communityName, _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes,_memberAccessContract, _proposalTime, _proposalDelay, _isInviteOnly);
 
 
     }
@@ -199,6 +203,7 @@ contract learntgetherCommunities{
 
         emit ProposalCreated(proposalCounter, msg.sender, _communityName, block.timestamp, _propType);
 
+        porposalsByCommunity[_communityName].push(proposalCounter);
 
         return proposalCounter;
 
@@ -225,6 +230,7 @@ contract learntgetherCommunities{
         uint256 _minCredsToVote,
         uint256 _maxCredsCountedForVote,
         uint256 _minProposalVotes,
+        address _credsAccessAddress,
         uint256 _proposalTime,
         uint256 _proposalDelay,
         bool _isInviteOnly
@@ -243,11 +249,12 @@ contract learntgetherCommunities{
         pProp.minCredsToVote = _minCredsToVote;
         pProp.maxCredsCountedForVote = _maxCredsCountedForVote;
         pProp.minProposalVotes = _minProposalVotes;
+        pProp.memberAccessContract = _credsAccessAddress;
         pProp.proposalTime = _proposalTime;
         pProp.proposalDelay = _proposalDelay;
         pProp.isInviteOnly = _isInviteOnly;
 
-        emit CommunityProposalParams(_communityName, proposalCounter, _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _proposalTime, _proposalDelay, _isInviteOnly);
+        emit CommunityProposalParams(_communityName, proposalCounter, _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _credsAccessAddress, _proposalTime, _proposalDelay, _isInviteOnly);
         
         // Send Fee to appropriate Address
         (bool _sent, ) = feeAddress.call{value: msg.value}("");
@@ -421,6 +428,7 @@ contract learntgetherCommunities{
                     communityToUpdate.minCredsToVote = CommunityProposals[proposalId].minCredsToVote;
                     communityToUpdate.maxCredsCountedForVote = CommunityProposals[proposalId].maxCredsCountedForVote;
                     communityToUpdate.minProposalVotes = CommunityProposals[proposalId].minProposalVotes;
+                    communityToUpdate.memberAccessContract = CommunityProposals[proposalId].memberAccessContract;
                     communityToUpdate.proposalTime = CommunityProposals[proposalId].proposalTime;
                     communityToUpdate.proposalDelay = CommunityProposals[proposalId].proposalDelay;
                     communityToUpdate.isInviteOnly = CommunityProposals[proposalId].isInviteOnly;
@@ -569,6 +577,11 @@ contract learntgetherCommunities{
         return( communities[_communityName].minCredsToProposeVote, communities[_communityName].minCredsToVote, communities[_communityName].maxCredsCountedForVote, communities[_communityName].minProposalVotes, communities[_communityName].proposalTime, communities[_communityName].proposalDelay, communities[_communityName].isInviteOnly);
     
     }
+    function getMemberAccessContract(string memory _communityName) external view returns (address){
+        require(communities[_communityName].creator!= address(0), "Community Does Not Exsist");
+        return( communities[_communityName].memberAccessContract);
+    }
+
 
     function getProposalVote(address _address, uint256 _proposalId ) external view returns (uint256 approveVotes, uint256 approveCreds, uint256 denyVotes, uint256 denyCreds, bool ) {
         // checks if a person has voted not what they voted for. To check what they coted for will need to use 
@@ -608,8 +621,36 @@ contract learntgetherCommunities{
     function getFee() external view returns(uint256){
         return fee;
     }
- 
 
+    function getPaginatedCommunityProposals(string memory _communityName, uint256 _numIdsreturned, uint256 _pageNumber ) external view returns(uint256[] memory, uint256 numPages){
+        uint256[] memory ids = new uint256[](_numIdsreturned);
+        uint256 counter= 0;
+        uint256 start= _pageNumber * _numIdsreturned;
+        uint256 end= start + _numIdsreturned;
+        if (end > porposalsByCommunity[_communityName].length){
+            end= porposalsByCommunity[_communityName].length;
+        }
+        for (uint256 i= start; i < end; i++){
+            ids[counter]= porposalsByCommunity[_communityName][i];
+            counter++;
+        }
+        return(ids, porposalsByCommunity[_communityName].length / _numIdsreturned);
+    }
+
+    function getPaginatedActiveProposals( uint256 _numIdsreturned, uint256 _pageNumber ) external view returns(uint256[] memory, uint256 numPages){
+        uint256[] memory ids = new uint256[](_numIdsreturned);
+        uint256 counter= 0;
+        uint256 start= _pageNumber * _numIdsreturned;
+        uint256 end= start + _numIdsreturned;
+        if (end > ActiveProposals.length){
+            end= ActiveProposals.length;
+        }
+        for (uint256 i= start; i < end; i++){
+            ids[counter]= ActiveProposals[i];
+            counter++;
+        }
+        return(ids, ActiveProposals.length / _numIdsreturned);
+    }
 
 
 

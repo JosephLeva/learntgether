@@ -17,10 +17,12 @@ const consensusTime= 2630000
 const consensusTypes = ["Hello", "World"]
 
 const zeroAddress = "0x0000000000000000000000000000000000000000";
+const memberAccessContract =zeroAddress
+
 const feeAmount = ethers.utils.parseEther("1"); // Replace "1" with the actual fee amount
 const ccfeeAmount = ethers.utils.parseEther("0.5"); // Replace "1" with the actual fee amount
 
-describe("Learntgether Reviewers Contract", function() {
+describe("Learntgether Post Consensus Contract", function() {
   let ltgr
   let ltgs
   let owner;
@@ -50,8 +52,8 @@ describe("Learntgether Reviewers Contract", function() {
     await ltgm.connect(owner).setlearntgetherCommunities(ltgc.address);
     await ltgc.connect(owner).setlearntgetherMembersContract(ltgm.address);
 
-    await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime, proposalDelay, isInviteOnly);
-    await ltgc.connect(owner).createCommunity("No Consensous Community", minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime, proposalDelay, isInviteOnly);
+    await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes,memberAccessContract, proposalTime, proposalDelay, isInviteOnly);
+    await ltgc.connect(owner).createCommunity("No Consensous Community", minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes,memberAccessContract, proposalTime, proposalDelay, isInviteOnly);
 
     await ltgm.connect(owner).addSelfAsMember(communityName);
     await ltgm.connect(addr1).addSelfAsMember(communityName);
@@ -147,14 +149,14 @@ describe("CheckUpkeep", function() {
 
     it("Should not check upkeep because not enough time has passed", async function() {
         
-       const data=  await ltgpc.connect(addr1).checkUpKeep();
+       const data=  await ltgpc.connect(addr1).checkUpkeep();
        expect(data[0]).to.equal(false)
     });
 
     it("Should check upkeep on first article and accept", async function() {
         await network.provider.send("evm_increaseTime", [consensusTime]);
         await network.provider.send("evm_mine");
-        const data=  await ltgpc.connect(addr1).checkUpKeep();
+        const data=  await ltgpc.connect(addr1).checkUpkeep();
         expect(data[0]).to.equal(true)
         expect(data[1]).to.equal("0x0000000000000000000000000000000000000000000000000000000000000001")
      });
@@ -164,7 +166,7 @@ describe("CheckUpkeep", function() {
         await ltgpc.connect(addr2).submitReview(1, "Endpoint for review.com/thissicool", 3);
         await network.provider.send("evm_increaseTime", [consensusTime]);
         await network.provider.send("evm_mine");
-        const data=  await ltgpc.connect(addr1).checkUpKeep();
+        const data=  await ltgpc.connect(addr1).checkUpkeep();
         expect(data[0]).to.equal(true)
         expect(data[1]).to.equal("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
      });

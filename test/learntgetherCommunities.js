@@ -9,8 +9,9 @@ const minProposalVotes = 1;
 const proposalTime = 2630000;
 const proposalDelay= 604800
 const isInviteOnly = false;
-
 const zeroAddress = "0x0000000000000000000000000000000000000000";
+const memberAccessContract = zeroAddress;
+
 const feeAmount = ethers.utils.parseEther("1"); // Replace "1" with the actual fee amount
 
 describe("Learntgether Reviewers Contract", function() {
@@ -46,21 +47,21 @@ describe("Learntgether Reviewers Contract", function() {
   describe("Community Creation", function() {
 
     it("Should create a community", async function() {
-        await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime, proposalDelay, isInviteOnly);
+        await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, memberAccessContract, proposalTime, proposalDelay, isInviteOnly);
         const communitySaved = await ltgc.getCommunityExists(communityName)
         expect(communitySaved).to.be.true
     });
     it("Should fail to create a community that already exsists", async function() {
-      await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime, proposalDelay, isInviteOnly);
+      await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, memberAccessContract, proposalTime, proposalDelay, isInviteOnly);
       
-      await expect(ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime, proposalDelay, isInviteOnly)).to.be.revertedWith("Community already exists.")
+      await expect(ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, memberAccessContract, proposalTime, proposalDelay, isInviteOnly)).to.be.revertedWith("Community already exists.")
     });
 
   });
 
-    describe("Community Proposal Creation", function() {
+  describe("Community Proposal Creation", function() {
       beforeEach(async function() {
-        await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime, proposalDelay, isInviteOnly);
+        await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, memberAccessContract, proposalTime, proposalDelay, isInviteOnly);
         await ltgm.connect(owner).addSelfAsMember(communityName);
         await ltgm.connect(addr1).addSelfAsMember(communityName);
         await ltgm.connect(owner).addPosCredsToMember(communityName, addr1.address);
@@ -69,16 +70,17 @@ describe("Learntgether Reviewers Contract", function() {
   
       it ("Should create a Community Proposals", async function() {
         const _bal = await ethers.provider.getBalance(owner.address)
-        await ltgc.connect(addr1).CommunityProposal(communityName, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1, proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
+        await ltgc.connect(addr1).CommunityProposal(communityName, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1,"0x0000000000000000000000000000000000000001" , proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
         const propType = await ltgc.getProposalType(1);
         expect(propType).to.equal(1);
-        const [ _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _proposalTime, _proposalDelay, _isInviteOnly]= await ltgc.CommunityProposals(1);
+        const [ _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _memberAccessContract, _proposalTime, _proposalDelay, _isInviteOnly]= await ltgc.CommunityProposals(1);
         const _afterbal = await ethers.provider.getBalance(owner.address)
 
         expect(_minCredsToProposeVote).to.equal(minCredsToProposeVote +1);
         expect(_minCredsToVote).to.equal(minCredsToVote +1);
         expect(_maxCredsCountedForVote).to.equal(maxCredsCountedForVote+1);
         expect(_minProposalVotes).to.equal(minProposalVotes+1);
+        expect(_memberAccessContract).to.equal("0x0000000000000000000000000000000000000001")
         expect(_proposalTime).to.equal(proposalTime+1);
         expect(_proposalDelay).to.equal(proposalDelay+1);
         expect(_isInviteOnly).to.equal(!isInviteOnly);
@@ -88,11 +90,11 @@ describe("Learntgether Reviewers Contract", function() {
       });
   
       it("Should fail to create a Community Proposal when not a member", async function() {
-        await expect(ltgc.connect(addr2).CommunityProposal(communityName,minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1, proposalTime+1, proposalDelay +1, { value: feeAmount })).to.be.revertedWith("You are not a member for this community.");
+        await expect(ltgc.connect(addr2).CommunityProposal(communityName,minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1,"0x0000000000000000000000000000000000000001", proposalTime+1, proposalDelay +1, { value: feeAmount })).to.be.revertedWith("You are not a member for this community.");
       });
   
       it("Should fail to create a Community Proposal when not enough fee", async function() {
-        await expect(ltgc.connect(addr1).CommunityProposal(communityName, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1, proposalTime+1, proposalDelay +1, { value: feeAmount.sub(1) })).to.be.revertedWith('Must send proposal fee');
+        await expect(ltgc.connect(addr1).CommunityProposal(communityName, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1,"0x0000000000000000000000000000000000000001" , proposalTime+1, proposalDelay +1, { value: feeAmount.sub(1) })).to.be.revertedWith('Must send proposal fee');
       });
   
     });  
@@ -101,7 +103,7 @@ describe("Learntgether Reviewers Contract", function() {
 
     describe("Custom Proposal Creation", function() {
       beforeEach(async function() {
-        await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime, proposalDelay, isInviteOnly);
+        await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, memberAccessContract, proposalTime, proposalDelay, isInviteOnly);
         await ltgm.connect(owner).addSelfAsMember(communityName);
         await ltgm.connect(addr1).addSelfAsMember(communityName);
         await ltgm.connect(owner).addPosCredsToMember(communityName, addr1.address);
@@ -136,11 +138,11 @@ describe("Learntgether Reviewers Contract", function() {
 
     describe("Vote Creation", function() {
       beforeEach(async function() {
-        await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime,  0 /*proposalDelay*/, isInviteOnly);
+        await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, memberAccessContract, proposalTime,  0 /*proposalDelay*/, isInviteOnly);
         await ltgm.connect(owner).addSelfAsMember(communityName);
         await ltgm.connect(addr1).addSelfAsMember(communityName);
         await ltgm.connect(owner).addPosCredsToMember(communityName, addr1.address);
-        await ltgc.connect(addr1).CommunityProposal(communityName, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1, proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
+        await ltgc.connect(addr1).CommunityProposal(communityName, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1,"0x0000000000000000000000000000000000000001" , proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
       });
   
       it ("Should create a Community Vote", async function() {
@@ -169,11 +171,11 @@ describe("Learntgether Reviewers Contract", function() {
         await network.provider.send("evm_increaseTime", [proposalTime+10]);
         await expect(ltgc.connect(addr1).vote(1, true)).to.be.revertedWith("Not Active Voting Time");
         // before delay (need new proposal)
-        await ltgc.connect(owner).createCommunity("2", minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime, proposalDelay, isInviteOnly);
+        await ltgc.connect(owner).createCommunity("2", minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, memberAccessContract, proposalTime, proposalDelay, isInviteOnly);
         await ltgm.connect(owner).addSelfAsMember("2");
         await ltgm.connect(addr1).addSelfAsMember("2");
         await ltgm.connect(addr1).addPosCredsToMember("2", owner.address);
-        await ltgc.connect(owner).CommunityProposal("2", minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1, proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
+        await ltgc.connect(owner).CommunityProposal("2", minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1,"0x0000000000000000000000000000000000000001",  proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
         await expect(ltgc.connect(owner).vote(1, true)).to.be.revertedWith("Not Active Voting Time");
   
       });
@@ -182,12 +184,12 @@ describe("Learntgether Reviewers Contract", function() {
 
   describe("Check Upkeep" , function() {
     beforeEach(async function() {
-      await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime,  0 /*proposalDelay*/, isInviteOnly);
+      await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, memberAccessContract, proposalTime,  0 /*proposalDelay*/, isInviteOnly);
       await ltgm.connect(owner).addSelfAsMember(communityName);
       await ltgm.connect(addr1).addSelfAsMember(communityName);
       await ltgm.connect(owner).addPosCredsToMember(communityName, addr1.address);
       await ltgm.connect(addr1).addPosCredsToMember(communityName, owner.address);
-      await ltgc.connect(addr1).CommunityProposal(communityName, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1, proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
+      await ltgc.connect(addr1).CommunityProposal(communityName, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1,"0x0000000000000000000000000000000000000001" , proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
       await network.provider.send("evm_increaseTime", [proposalDelay+1]);
       await network.provider.send("evm_mine");
       await ltgc.connect(owner).vote(1, true);
@@ -208,9 +210,9 @@ describe("Learntgether Reviewers Contract", function() {
     });
 
     it ("Should have the second proposal be chosen as it is higher priority ", async function() {
-      await ltgc.connect(owner).createCommunity("2", 0 /* minCredsToProposeVote */ , minCredsToVote, maxCredsCountedForVote, 1 /*minProposalVotes*/, 0, 0 /*proposalDelay set to 0 for it to evaluate sooner*/, isInviteOnly);
+      await ltgc.connect(owner).createCommunity("2", 0 /* minCredsToProposeVote */ , minCredsToVote, maxCredsCountedForVote, 1 /*minProposalVotes*/, "0x0000000000000000000000000000000000000001", 0 /* Proposal time*/, 0 /*proposalDelay set to 0 for it to evaluate sooner*/, isInviteOnly);
       await ltgm.connect(owner).addSelfAsMember("2");
-      await ltgc.connect(owner).CommunityProposal("2" /* community name */, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1, proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
+      await ltgc.connect(owner).CommunityProposal("2" /* community name */, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1,"0x0000000000000000000000000000000000000001", proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
 
       await network.provider.send("evm_increaseTime", [proposalDelay+1]);
       await network.provider.send("evm_increaseTime", [proposalTime]);
@@ -226,7 +228,7 @@ describe("Learntgether Reviewers Contract", function() {
 
   describe("Perform Upkeep" , function() {
     beforeEach(async function() {
-      await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime,  0 /*proposalDelay*/, isInviteOnly);
+      await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, memberAccessContract, proposalTime,  0 /*proposalDelay*/, isInviteOnly);
       await ltgm.connect(owner).addSelfAsMember(communityName);
       await ltgm.connect(addr1).addSelfAsMember(communityName);
       await ltgm.connect(addr2).addSelfAsMember(communityName);
@@ -235,7 +237,7 @@ describe("Learntgether Reviewers Contract", function() {
       await ltgm.connect(owner).addPosCredsToMember(communityName, addr1.address);
       await ltgm.connect(owner).addPosCredsToMember(communityName, addr2.address);
       await ltgm.connect(addr1).addPosCredsToMember(communityName, owner.address);
-      await ltgc.connect(addr1).CommunityProposal(communityName, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1, proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
+      await ltgc.connect(addr1).CommunityProposal(communityName, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1,"0x0000000000000000000000000000000000000001" , proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
       await ltgc.connect(addr2).CustomProposal(communityName, "0x0000000000000000000000000000000000000001", { value: feeAmount });
       await ltgc.connect(addr3).CustomProposal(communityName, "0x0000000000000000000000000000000000000001", { value: feeAmount });
 
@@ -275,12 +277,13 @@ describe("Learntgether Reviewers Contract", function() {
       const indexold = await ltgc.connect(owner).getActiveProposalIndex(2);
       expect(indexold).to.equal(2);
 
-      const[ _owner, _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _proposalTime, _proposalDelay, _isInviteOnly] = await ltgc.connect(owner).communities(communityName);
+      const[ _owner, _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes,_memberAccessContract, _proposalTime, _proposalDelay, _isInviteOnly] = await ltgc.connect(owner).communities(communityName);
       expect(_owner).to.equal(owner.address);
       expect(_minCredsToProposeVote).to.equal(minCredsToProposeVote+1);
       expect(_minCredsToVote).to.equal(minCredsToVote+1);
       expect(_maxCredsCountedForVote).to.equal(maxCredsCountedForVote +1);
       expect(_minProposalVotes).to.equal(minProposalVotes+1);
+      expect(_memberAccessContract).to.equal("0x0000000000000000000000000000000000000001");
       expect(_proposalTime).to.equal(proposalTime+1);
       expect(_proposalDelay).to.equal(proposalDelay+1);
       expect(_isInviteOnly).to.equal(!isInviteOnly);

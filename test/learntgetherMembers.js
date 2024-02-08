@@ -11,6 +11,7 @@ const proposalDelay= 604800
 const isInviteOnly = false;
 
 const zeroAddress = "0x0000000000000000000000000000000000000000";
+const memberAccessContract =zeroAddress
 
 
 describe("Learntgether Reviewers Contract", function() {
@@ -41,10 +42,10 @@ describe("Learntgether Reviewers Contract", function() {
 
 
 
-    await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime,  proposalDelay, isInviteOnly);
+    await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, memberAccessContract, proposalTime,  proposalDelay, isInviteOnly);
 
 
-    await ltgc.connect(owner).createCommunity(InviteOnlyCommunityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime,  proposalDelay, !isInviteOnly);
+    await ltgc.connect(owner).createCommunity(InviteOnlyCommunityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, memberAccessContract, proposalTime,  proposalDelay, !isInviteOnly);
 
     const communitySaved = await ltgc.getCommunityExists(communityName)
     expect(communitySaved).to.be.true
@@ -97,7 +98,7 @@ describe("Learntgether Reviewers Contract", function() {
     );
 
     it("Should fail to invite member if not owner", async function() {
-      await expect(ltgm.connect(addr1).inviteMember(InviteOnlyCommunityName, addr1.address )).to.be.revertedWith("You are not the owner of this community.");
+      await expect(ltgm.connect(addr1).inviteMember(InviteOnlyCommunityName, addr1.address )).to.be.revertedWith("You dont have permission invite Members");
     }
     );
 
@@ -134,7 +135,7 @@ describe("Learntgether Reviewers Contract", function() {
     );
 
     it("Should fail to uninvite member if not owner", async function() {
-      await expect(ltgm.connect(addr1).uninviteMember(InviteOnlyCommunityName, addr1.address )).to.be.revertedWith("You are not the owner of this community.");
+      await expect(ltgm.connect(addr1).uninviteMember(InviteOnlyCommunityName, addr1.address )).to.be.revertedWith("You dont have permission uninvite Members");
     });
 
     it("Should fail to uninvite member if not invited only", async function() {
@@ -363,6 +364,96 @@ describe("Learntgether Reviewers Contract", function() {
       });
       
     });
+
+
+    describe('Set Creds When Cred Contract', async () => {
+
+      beforeEach(async function() {  
+        const MockCredAccess = await ethers.getContractFactory("MOCKCredAccess");
+        mca = await MockCredAccess.deploy(ltgm.address,"CredCommunity");
+        await mca.deployed();
+
+
+        await ltgc.connect(owner).createCommunity("CredCommunity", minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, mca.address, proposalTime,  proposalDelay, isInviteOnly);
+        await ltgc.connect(owner).createCommunity("CredCommunityInvite", minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, mca.address, proposalTime,  proposalDelay, true);
+
+        await ltgm.connect(addr1).addSelfAsMember("CredCommunity");
+
+        await ltgm.connect(addr2).addSelfAsMember("CredCommunity");
+        await ltgm.connect(addr1).addSelfAsMember(communityName);
+
+        
+
+      });
+
+
+      it("Should set creds when cred contract", async function() {
+
+        await mca.connect(addr1).setMemberCred(addr1.address, 1);
+        const creds= await ltgm.connect(owner).getMemberCreds(addr1.address, "CredCommunity");
+        expect(creds).to.equal(1);
+
+      });
+
+      
+      it("Should fail to set creds if not the correct community ", async function() {
+        await mca.updateCommunity(communityName);
+        await expect(mca.connect(owner).setMemberCred(addr1.address, 1)).to.be.revertedWith("Not the cred access contract or User not member");
+      });
+
+
+      
+      it("Should fail to allow users to add pos cred when contract is responsible ", async function() {
+        await expect(ltgm.connect(addr1).addPosCredsToMember("CredCommunity", addr2.address)).to.be.revertedWith("Commmunity Uses a cred access contract");
+      });
+      it("Should fail to allow users to add neg cred when contract is responsible ", async function() {
+        await expect(ltgm.connect(addr1).addNegCredsToMember("CredCommunity", addr2.address)).to.be.revertedWith("Commmunity Uses a cred access contract");
+      });
+      it("Should fail to allow users to remove pos cred when contract is responsible ", async function() {
+        await expect(ltgm.connect(addr1).removePosCredsFromMember("CredCommunity", addr2.address)).to.be.revertedWith("Commmunity Uses a cred access contract");
+      });
+      it("Should fail to allow users to remove neg cred when contract is responsible ", async function() {
+        await expect(ltgm.connect(addr1).removeNegCredsFromMember("CredCommunity", addr2.address)).to.be.revertedWith("Commmunity Uses a cred access contract");
+      });
+
+      it("Should allow cred access contract to invite members", async function() {
+        await mca.updateCommunity("CredCommunityInvite");
+        await mca.connect(owner).inviteMember(addr2.address);
+        const isInvited = await ltgm.connect(owner).getIsInvited(addr2.address,"CredCommunityInvite")
+        expect(isInvited).to.be.true
+      });
+
+      it("Should allow cred access contract to uninvite members ", async function() {
+        await mca.updateCommunity("CredCommunityInvite");
+        await mca.connect(owner).inviteMember(addr2.address);
+        const isInvited1 = await ltgm.connect(owner).getIsInvited(addr2.address,"CredCommunityInvite")
+        expect(isInvited1).to.be.true  
+        await mca.connect(owner).uninviteMember(addr2.address);
+        const isInvited2 = await ltgm.connect(owner).getIsInvited(addr2.address,"CredCommunityInvite")
+        expect(isInvited2).to.be.false    
+    
+    });
+
+    it("Should fail to invite and uninvite for wrong community ", async function() {
+      await mca.updateCommunity(communityName);
+      await expect(mca.connect(owner).inviteMember(addr3.address)).to.be.revertedWith("You dont have permission invite Members");
+      await expect(mca.connect(owner).uninviteMember(addr3.address)).to.be.revertedWith("You dont have permission uninvite Members");
+
+    });
+    it("Should fail when an owner tries to update a credaccess controlled community ", async function() {
+      await expect(ltgm.connect(owner).inviteMember("CredCommunityInvite",addr3.address)).to.be.revertedWith("You dont have permission invite Members");
+      await mca.updateCommunity("CredCommunityInvite");
+      const ads =await mca.connect(owner).inviteMember(addr3.address);
+
+      await expect(ltgm.connect(owner).uninviteMember("CredCommunityInvite", addr3.address)).to.be.revertedWith("You dont have permission uninvite Members");
+
+  });
+
+  });
+
+
+
+
 
   
 });

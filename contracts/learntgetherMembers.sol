@@ -7,6 +7,8 @@ interface learntgetherCommuityInterface{
     function getCommunityExists(string memory _communityName) external view returns (bool);
     function getCommunityOwner(string memory _communityName) external view returns (address);
     function getCommunityIsInviteOnly(string memory _communityName) external view returns (bool);
+    function getMemberAccessContract(string memory _communityName) external view returns (address);
+
 }
 
 contract learntgetherMembers{
@@ -17,10 +19,12 @@ contract learntgetherMembers{
         mapping(address => int256) hasGivenCred;
         address[] postiveCredAddresses;
         address[] negativeCredAddresses;
-        bool isMember;
+        uint256 isMember;
     } 
 
     mapping(address => mapping(string => communityInfo)) membersMap; // Use a mapping for easy access to members by address
+
+    mapping(address=> string[]) public memberCommunities; // Use a mapping for easy access to communities by address
 
     address private owner;
 
@@ -47,10 +51,10 @@ contract learntgetherMembers{
         // Ensure the community exsits 
 
         // Ensure the sender is a member for the community
-        require(membersMap[msg.sender][_communityName].isMember == true, "You are not a member of this community.");
+        require(membersMap[msg.sender][_communityName].isMember != 0, "You are not a member of this community.");
         
         // Ensure the target member exists of this community
-        require(membersMap[_member][_communityName].isMember == true, "Target member doesn't exist of this community.");
+        require(membersMap[_member][_communityName].isMember != 0, "Target member doesn't exist of this community.");
 
         // Ensure a member is not editing creds to themselves
         require(msg.sender != _member, "You cannot edit your own creds.");
@@ -81,10 +85,11 @@ contract learntgetherMembers{
         * @param _communityName Name of the community.
         * @param _memberAddress Address of the member.
     */
-    function inviteMember(string memory _communityName, address _memberAddress) public returns (address){
-        require(membersMap[_memberAddress][_communityName].isMember != true, "Member already exists of this community.");
+    function inviteMember(string memory _communityName, address _memberAddress) external returns (address){
+        require(membersMap[_memberAddress][_communityName].isMember == 0, "Member already exists of this community.");
         require(isInvited[_communityName][_memberAddress] == false, "User Already Invited");
-        require(msg.sender == communityContract.getCommunityOwner(_communityName), "You are not the owner of this community.");
+        address credAddress = communityContract.getMemberAccessContract(_communityName);
+        require((msg.sender == communityContract.getCommunityOwner(_communityName) && credAddress == address(0))|| msg.sender == communityContract.getMemberAccessContract(_communityName)  , "You dont have permission invite Members");
         require(communityContract.getCommunityIsInviteOnly(_communityName)== true, "This community is not invite only.");
 
         // Adding them as invited but addresses(users) still have the option to accept in this.addselfasmember
@@ -102,18 +107,18 @@ contract learntgetherMembers{
         * @param _communityName Name of the community.
         * @param _memberAddress Address of the member.
     */
-    function uninviteMember(string memory _communityName, address _memberAddress) public returns (address){
-        require(membersMap[_memberAddress][_communityName].isMember != true, "Member already exists of this community.");
-        require(msg.sender == communityContract.getCommunityOwner(_communityName), "You are not the owner of this community.");
+    function uninviteMember(string memory _communityName, address _memberAddress) external returns (address){
+        address credAddress = communityContract.getMemberAccessContract(_communityName);
+        require((msg.sender == communityContract.getCommunityOwner(_communityName) && credAddress == address(0))|| msg.sender == communityContract.getMemberAccessContract(_communityName)  , "You dont have permission uninvite Members");        
         require(communityContract.getCommunityIsInviteOnly(_communityName)== true, "This community is not invite only.");
-        require(isInvited[_communityName][_memberAddress] != false, "Member Not Invited");
+        require(isInvited[_communityName][_memberAddress] == true, "Member Not Invited");
         require(msg.sender != _memberAddress, "You cannot uninvite yourself.");
 
         isInvited[_communityName][_memberAddress] = false;
 
         // remove them as member if they already are one
         if (this.getIsMember(_memberAddress, _communityName) == true){
-            membersMap[_memberAddress][_communityName].isMember= false;
+            membersMap[_memberAddress][_communityName].isMember= 0;
         }
 
         emit MemberUninvited(_communityName, _memberAddress);
@@ -127,10 +132,10 @@ contract learntgetherMembers{
             * @param _communityName Name of the community.
         */
 
-    function addSelfAsMember(string memory _communityName) public  {
+    function addSelfAsMember(string memory _communityName) external  {
 
         require(communityContract.getCommunityExists(_communityName), "Community Does not Exist");
-        require(membersMap[msg.sender][_communityName].isMember != true, "You are already a member of this community.");
+        require(membersMap[msg.sender][_communityName].isMember == 0, "You are already a member of this community.");
 
         // Ensure the user is invited if the community is invite only
 
@@ -139,8 +144,14 @@ contract learntgetherMembers{
             require(isInvited[_communityName][msg.sender] == true, "You are not invited to this community.");
         }
 
+        if (memberCommunities[msg.sender].length == 0){
+            memberCommunities[msg.sender].push("");
+        }
+        
+        memberCommunities[msg.sender].push(_communityName);
 
-        membersMap[msg.sender][_communityName].isMember= true;
+        membersMap[msg.sender][_communityName].isMember= memberCommunities[msg.sender].length -1;
+
         // Set first item to 0 to help mapping
 
         membersMap[msg.sender][_communityName].postiveCredAddresses.push(address(0));
@@ -156,12 +167,25 @@ contract learntgetherMembers{
             * @param _communityName Name of the community.
 
         */
-    function removeSelfAsMember(string memory _communityName) public  {
+    function removeSelfAsMember(string memory _communityName) external  {
 
         require(communityContract.getCommunityExists(_communityName), "Community Does Not Exist");
-        require(membersMap[msg.sender][_communityName].isMember != false, "You are not a member of this community.");
+        require(membersMap[msg.sender][_communityName].isMember != 0, "You are not a member of this community.");
 
-        membersMap[msg.sender][_communityName].isMember= false;
+        // swap pop our memberCommunities array
+        uint256 index = uint256(membersMap[msg.sender][_communityName].isMember);
+        if (index != memberCommunities[msg.sender].length -1) {
+            // swap pop our memberCommunities array
+            memberCommunities[msg.sender][index]= memberCommunities[msg.sender][memberCommunities[msg.sender].length -1];
+            membersMap[msg.sender][memberCommunities[msg.sender][index]].isMember= index;
+
+        }
+            memberCommunities[msg.sender].pop();
+
+            membersMap[msg.sender][_communityName].isMember= 0;
+
+
+        membersMap[msg.sender][_communityName].isMember= 0;
         emit MemberRemoved(_communityName, msg.sender);
     }
 
@@ -172,6 +196,9 @@ contract learntgetherMembers{
         * @param _member Address of the member.
     */
     function addPosCredsToMember(string memory _communityName, address _member) external  credRules(_communityName, _member) {
+        address credAddress = communityContract.getMemberAccessContract(_communityName);
+        require(credAddress== address(0),  "Commmunity Uses a cred access contract");
+
         require(membersMap[_member][_communityName].hasGivenCred[msg.sender] == 0, "You've already given a cred to this member.");
 
         membersMap[_member][_communityName].creds += 1;
@@ -185,6 +212,9 @@ contract learntgetherMembers{
 
 
     function addNegCredsToMember(string memory _communityName, address _member) external  credRules(_communityName, _member) {
+        address credAddress = communityContract.getMemberAccessContract(_communityName);
+        require(credAddress== address(0),  "Commmunity Uses a cred access contract");
+
         require(membersMap[_member][_communityName].hasGivenCred[msg.sender] == 0, "You've already given a cred to this member.");
 
         membersMap[_member][_communityName].creds -= 1;
@@ -204,6 +234,9 @@ contract learntgetherMembers{
         * @param _member Address of the member.
     */
     function removePosCredsFromMember(string memory _communityName, address _member) external credRules(_communityName, _member){
+        address credAddress = communityContract.getMemberAccessContract(_communityName);
+        require(credAddress== address(0),  "Commmunity Uses a cred access contract");
+
         require(membersMap[_member][_communityName].hasGivenCred[msg.sender] > 0, "You have not given a positive cred to this member yet.");
 
         membersMap[_member][_communityName].creds -= 1;
@@ -244,6 +277,9 @@ contract learntgetherMembers{
     */
 
     function removeNegCredsFromMember(string memory _communityName, address _member) external credRules(_communityName, _member){
+        address credAddress = communityContract.getMemberAccessContract(_communityName);
+        require(credAddress== address(0),  "Commmunity Uses a cred access contract");
+
         require(membersMap[_member][_communityName].hasGivenCred[msg.sender] < 0, "You have not given a negative cred to this member yet.");
 
         membersMap[_member][_communityName].creds += 1;
@@ -277,6 +313,13 @@ contract learntgetherMembers{
         emit RemovedNegCred(_communityName, _member, msg.sender, membersMap[_member][_communityName].creds);
     }
 
+    function contractSetCred(string memory _communityName,address _memberAddress, int256 _creds) external returns (int256){
+        address credAccess = communityContract.getMemberAccessContract(_communityName);
+        require(msg.sender == credAccess && credAccess!= address(0) &&  membersMap[_memberAddress][_communityName].isMember != 0, "Not the cred access contract or User not member");
+        membersMap[_memberAddress][_communityName].creds = _creds;
+        return membersMap[_memberAddress][_communityName].creds;
+    }
+
 
 
 
@@ -290,39 +333,43 @@ contract learntgetherMembers{
 
 
     function getIsMember(address _memberAddress, string memory _communityName) external view returns (bool) {
-        return membersMap[_memberAddress][_communityName].isMember;
+        if (membersMap[_memberAddress][_communityName].isMember == 0){
+            return false;
+        } else{
+            return true;
+        }
     }
 
     function getMemberCreds(address _memberAddress, string memory _communityName) external view returns (int256 creds) {
-        require(membersMap[_memberAddress][_communityName].isMember == true, "Member Does Not Exist For this community");
+        require(membersMap[_memberAddress][_communityName].isMember != 0, "Member Does Not Exist For this community");
         return membersMap[_memberAddress][_communityName].creds;
     }
     function getMemberPosCredsList(address _memberAddress, string memory _communityName)external view returns (address[] memory addressList){
-        require(membersMap[_memberAddress][_communityName].isMember == true, "Member Does Not Exist For this community");
+        require(membersMap[_memberAddress][_communityName].isMember != 0, "Member Does Not Exist For this community");
         return membersMap[_memberAddress][_communityName].postiveCredAddresses;        
     }
     function getMemberNegCredsList(address _memberAddress, string memory _communityName)external view returns (address[] memory addressList){
-        require(membersMap[_memberAddress][_communityName].isMember == true, "Member Does Not Exist For this community");
+        require(membersMap[_memberAddress][_communityName].isMember != 0, "Member Does Not Exist For this community");
         return membersMap[_memberAddress][_communityName].negativeCredAddresses;        
     }
 
     // Postive return results in user giving a positive cred to the member. Negative return results in user giving a negative cred to the member
     function getMemberCredIndex(address _memberAddress, address _credGiverAddress, string memory _communityName)external view returns (int256 index){
-        require(membersMap[_memberAddress][_communityName].isMember == true, "Member Does Not Exist For this community");
+        require(membersMap[_memberAddress][_communityName].isMember != 0, "Member Does Not Exist For this community");
         return membersMap[_memberAddress][_communityName].hasGivenCred[_credGiverAddress];        
     }
    
 
 
     function hasMemberGivenCred(address _memberAddress, string memory _communityName, address givenBy) external view returns (bool) {
-        if (membersMap[_memberAddress][_communityName].hasGivenCred[givenBy]== 0){
+        if (membersMap[_memberAddress][_communityName].hasGivenCred[givenBy]!= 0){
             return true;
         } else{
             return false;
         }
     }
     function getReiewerCommunityInfo(address _memberAddress, string memory _communityName) external view returns (int256 _creds, address[] memory _posCreds, address[] memory _negCreds ){
-        require(membersMap[_memberAddress][_communityName].isMember == true, "Member Does Not Exist For this community");
+        require(membersMap[_memberAddress][_communityName].isMember != 0, "Member Does Not Exist For this community");
         return (membersMap[_memberAddress][_communityName].creds, membersMap[_memberAddress][_communityName].postiveCredAddresses, membersMap[_memberAddress][_communityName].negativeCredAddresses);
 
     }

@@ -17,6 +17,8 @@ const consensusTime= 2630000
 const consensusTypes = ["Hello", "World"]
 
 const zeroAddress = "0x0000000000000000000000000000000000000000";
+const memberAccessContract =zeroAddress
+
 const feeAmount = ethers.utils.parseEther("1"); // Replace "1" with the actual fee amount
 const ccfeeAmount = ethers.utils.parseEther("0.5"); // Replace "1" with the actual fee amount
 
@@ -50,7 +52,7 @@ describe("Learntgether Reviewers Contract", function() {
     await ltgm.connect(owner).setlearntgetherCommunities(ltgc.address);
     await ltgc.connect(owner).setlearntgetherMembersContract(ltgm.address);
 
-    await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes, proposalTime, proposalDelay, isInviteOnly);
+    await ltgc.connect(owner).createCommunity(communityName, minCredsToProposeVote, minCredsToVote, maxCredsCountedForVote, minProposalVotes,memberAccessContract, proposalTime, proposalDelay, isInviteOnly);
     await ltgm.connect(owner).addSelfAsMember(communityName);
     await ltgm.connect(addr1).addSelfAsMember(communityName);
     await ltgm.connect(addr2).addSelfAsMember(communityName);
