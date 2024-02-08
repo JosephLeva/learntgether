@@ -13,15 +13,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
     - This is an advanced setting but unlocks communities ability to define how they value and accept their members
     - The address specified can update cred amount as well as (un)invitations
     - This disallows peer to peer cred distibution and (un)invitations from owners
-    - Some examples of metrics that could be used for cred amount (world is your oyster though)
+    - Some examples of metrics that could be used for cred amount (world is your oyster though!)
         - number of reviews members make
         - number of posts members have had accepted
         - number of submissions members have made
         - time spent in community
         - percent ownership of a particular shared asset
-- We can now directly view all communities members are a part of without using the Graph
+- We can now directly view all communities that members are a part of without using the Graph
     - this is done using a seprate memberCommunities mapping
-- We can now directyl view all proposals for a community
+- We can now directly view all proposals for a community
     - this is done though a seperate porposalsByCommunity mapping
 ### Changed
 - Split Members contract into Members and Member Info contracts to shorten length
