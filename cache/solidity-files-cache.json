@@ -1435,8 +1435,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/learntgetherMembers.sol": {
-      "lastModificationDate": 1707365407569,
-      "contentHash": "c68e78d5d829ff3c472a8e154608bf7e",
+      "lastModificationDate": 1707676421617,
+      "contentHash": "33f4e1ee78249de718c1d7bcb3a6a410",
       "sourceName": "contracts/learntgetherMembers.sol",
       "solcConfig": {
         "version": "0.8.20",

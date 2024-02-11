@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [0.0.3] - 2024-02-07
  
 ### Added
+### Changed
+- Updated Members Contract to seperate out remove cred logic
+    - Previously remove negative and remove postive cred used similar logic, this was replaced with an internal funciton to handle both
+    - This was needed in order to keep contract size below 24576 bytes
+### Fixed
+
+
+## [0.0.3] - 2024-02-07
+ 
+### Added
 - Communities can now control Creds and Membership externally via a new parameter called **memberAccessContract**
     - This is an advanced setting but unlocks communities ability to define how they value and accept their members
     - The address specified can update cred amount as well as (un)invitations

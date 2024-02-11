@@ -227,98 +227,62 @@ contract learntgetherMembers{
     }
 
 
-    /*
-        * @notice Removes Positive creds from a member for a given community.
-        * @dev Ensures the community exists and the sender has the authority to remove creds. When we remove creds we swap pop our credAddresses array
-        * @param _communityName Name of the community.
-        * @param _member Address of the member.
-    */
+    // Internal function to handle the removal of creds, both positive and negative
+    function _removeCred(
+        string memory _communityName,
+        address _member,
+        bool isPositive
+    ) internal {
+        address credAddress = communityContract.getMemberAccessContract(_communityName);
+        require(credAddress == address(0), "Community Uses a cred access contract");
+
+        int256 givenCred = membersMap[_member][_communityName].hasGivenCred[msg.sender];
+        require(
+            (isPositive && givenCred > 0) || (!isPositive && givenCred < 0),
+            isPositive ? "You have not given a positive cred to this member yet." : "Have not given a negative cred yet."
+        );
+
+         // Ensure arithmetic operations are consistently using int256
+        membersMap[_member][_communityName].creds += isPositive ? int256(-1) : int256(1);
+        emit Creds(_member, _communityName, membersMap[_member][_communityName].creds, block.timestamp);
+
+
+        uint256 index = uint256(isPositive ? givenCred : givenCred * -1);
+        address[] storage credAddresses = isPositive ? membersMap[_member][_communityName].postiveCredAddresses : membersMap[_member][_communityName].negativeCredAddresses;
+    // Corrected type for index and ternary operation result
+        if (index != credAddresses.length - 1) {
+            credAddresses[index] = credAddresses[credAddresses.length - 1];
+            // Ensure the multiplication result is also int256
+            membersMap[_member][_communityName].hasGivenCred[credAddresses[index]] = int256(index) * (isPositive ? int256(1) : int256(-1));
+            emit IndexUpdated(_communityName, _member, msg.sender, int256(index) * (isPositive ? int256(1) : int256(-1)));
+        }
+
+        membersMap[_member][_communityName].hasGivenCred[msg.sender] = 0;
+        credAddresses.pop();
+
+        if (isPositive) {
+            emit RemovedPosCred(_communityName, _member, msg.sender, membersMap[_member][_communityName].creds);
+        } else {
+            emit RemovedNegCred(_communityName, _member, msg.sender, membersMap[_member][_communityName].creds);
+        }
+    }
+
+    // Public function to remove positive creds, now simplified
     function removePosCredsFromMember(string memory _communityName, address _member) external credRules(_communityName, _member){
-        address credAddress = communityContract.getMemberAccessContract(_communityName);
-        require(credAddress== address(0),  "Commmunity Uses a cred access contract");
-
-        require(membersMap[_member][_communityName].hasGivenCred[msg.sender] > 0, "You have not given a positive cred to this member yet.");
-
-        membersMap[_member][_communityName].creds -= 1;
-        emit Creds(_member, _communityName, membersMap[_member][_communityName].creds, block.timestamp);
-
-
-        // set our target index to the users current cred for swap
-        uint256 index = uint256(membersMap[_member][_communityName].hasGivenCred[msg.sender]);
-
-        // Avoid the for loop if somehow the list is empty (we dont want to do anything anyway)
-        require(membersMap[_member][_communityName].postiveCredAddresses.length > 1, "This user has no Creds");
-
-
-        // check if index is last in array
-        if (index != membersMap[_member][_communityName].postiveCredAddresses.length -1) {
-            // if it is not we let the last item take its spot
-            membersMap[_member][_communityName].postiveCredAddresses[index]= membersMap[_member][_communityName].postiveCredAddresses[membersMap[_member][_communityName].postiveCredAddresses.length -1] ;
-
-        
-            // update the index in our mapping 
-            membersMap[_member][_communityName].hasGivenCred[membersMap[_member][_communityName].postiveCredAddresses[index]] = int256(index);
-            emit IndexUpdated(_communityName, _member, msg.sender, int256(index));
-        }
-
-        // update our mapping for cred holder to 0 
-        membersMap[_member][_communityName].hasGivenCred[msg.sender] = 0;
-        // no matter what we pop the last one in the list (avoid duplicates)
-        membersMap[_member][_communityName].postiveCredAddresses.pop();
-        emit RemovedPosCred(_communityName, _member, msg.sender, membersMap[_member][_communityName].creds);
-
+        _removeCred(_communityName, _member, true);
     }
 
-    /*
-        * @notice Removes Negative creds from a member for a given community.
-        * @dev Ensures the community exists and the sender has the authority to remove creds. When we remove creds we swap pop our credAddresses array
-        * @param _communityName Name of the community.
-        * @param _member Address of the member.
-    */
-
+    // Public function to remove negative creds, now simplified
     function removeNegCredsFromMember(string memory _communityName, address _member) external credRules(_communityName, _member){
-        address credAddress = communityContract.getMemberAccessContract(_communityName);
-        require(credAddress== address(0),  "Commmunity Uses a cred access contract");
+        _removeCred(_communityName, _member, false);
+    }
 
-        require(membersMap[_member][_communityName].hasGivenCred[msg.sender] < 0, "You have not given a negative cred to this member yet.");
-
-        membersMap[_member][_communityName].creds += 1;
-        emit Creds(_member, _communityName, membersMap[_member][_communityName].creds, block.timestamp);
-
-
-        // set our target index to the users current cred for swap (HAS to be negative because of our require statement) 
-        // index will allways be the positive value of the negative number
-        uint256 index = uint256(membersMap[_member][_communityName].hasGivenCred[msg.sender] * -1);
-
-        // Avoid the for loop if somehow the list is empty (we dont want to do anything anyway)
-        require(membersMap[_member][_communityName].negativeCredAddresses.length > 1, "This user has no Creds");
-
-
-        // check if index is last in array
-        if (index != membersMap[_member][_communityName].negativeCredAddresses.length -1) {
-            // if it is not we let the last item take its spot
-            membersMap[_member][_communityName].negativeCredAddresses[index]= membersMap[_member][_communityName].negativeCredAddresses[membersMap[_member][_communityName].negativeCredAddresses.length -1] ;
-
-        
-            // update the index in our mapping 
-            membersMap[_member][_communityName].hasGivenCred[membersMap[_member][_communityName].negativeCredAddresses[index]] = int256(index)* -1;
-            emit IndexUpdated(_communityName, _member, msg.sender, int256(index)*-1);
+        function contractSetCred(string memory _communityName,address _memberAddress, int256 _creds) external returns (int256){
+            address credAccess = communityContract.getMemberAccessContract(_communityName);
+            require(msg.sender == credAccess && credAccess!= address(0) &&  membersMap[_memberAddress][_communityName].isMember != 0, "Not the cred access contract or User not member");
+            membersMap[_memberAddress][_communityName].creds = _creds;
+            return membersMap[_memberAddress][_communityName].creds;
         }
-
-        // update our mapping for cred holder to 0 
-        membersMap[_member][_communityName].hasGivenCred[msg.sender] = 0;
-        // no matter what we pop the last one in the list (avoid duplicates)
-        membersMap[_member][_communityName].negativeCredAddresses.pop();
-
-        emit RemovedNegCred(_communityName, _member, msg.sender, membersMap[_member][_communityName].creds);
-    }
-
-    function contractSetCred(string memory _communityName,address _memberAddress, int256 _creds) external returns (int256){
-        address credAccess = communityContract.getMemberAccessContract(_communityName);
-        require(msg.sender == credAccess && credAccess!= address(0) &&  membersMap[_memberAddress][_communityName].isMember != 0, "Not the cred access contract or User not member");
-        membersMap[_memberAddress][_communityName].creds = _creds;
-        return membersMap[_memberAddress][_communityName].creds;
-    }
 
 
 
@@ -367,11 +331,6 @@ contract learntgetherMembers{
         } else{
             return false;
         }
-    }
-    function getReiewerCommunityInfo(address _memberAddress, string memory _communityName) external view returns (int256 _creds, address[] memory _posCreds, address[] memory _negCreds ){
-        require(membersMap[_memberAddress][_communityName].isMember != 0, "Member Does Not Exist For this community");
-        return (membersMap[_memberAddress][_communityName].creds, membersMap[_memberAddress][_communityName].postiveCredAddresses, membersMap[_memberAddress][_communityName].negativeCredAddresses);
-
     }
 
     // Only Owner functions 

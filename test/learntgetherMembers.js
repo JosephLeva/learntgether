@@ -352,7 +352,7 @@ describe("Learntgether Reviewers Contract", function() {
 
 
       it("Should fail to remove positive cred if adder has not given any", async function() {
-        await expect(ltgm.connect(addr5).removeNegCredsFromMember(communityName, addr2.address)).to.be.revertedWith("You have not given a negative cred to this member yet.");
+        await expect(ltgm.connect(addr5).removeNegCredsFromMember(communityName, addr2.address)).to.be.revertedWith("Have not given a negative cred yet.");
       });
       it("Should fail to remove positive cred if adder has only given negative", async function() {
         await ltgm.connect(addr5).addPosCredsToMember(communityName, addr2.address)
@@ -360,7 +360,7 @@ describe("Learntgether Reviewers Contract", function() {
         expect(posindex).to.equal(1);
 
         
-        await expect(ltgm.connect(addr5).removeNegCredsFromMember(communityName, addr2.address)).to.be.revertedWith("You have not given a negative cred to this member yet.");
+        await expect(ltgm.connect(addr5).removeNegCredsFromMember(communityName, addr2.address)).to.be.revertedWith("Have not given a negative cred yet.");
       });
       
     });
@@ -410,10 +410,10 @@ describe("Learntgether Reviewers Contract", function() {
         await expect(ltgm.connect(addr1).addNegCredsToMember("CredCommunity", addr2.address)).to.be.revertedWith("Commmunity Uses a cred access contract");
       });
       it("Should fail to allow users to remove pos cred when contract is responsible ", async function() {
-        await expect(ltgm.connect(addr1).removePosCredsFromMember("CredCommunity", addr2.address)).to.be.revertedWith("Commmunity Uses a cred access contract");
+        await expect(ltgm.connect(addr1).removePosCredsFromMember("CredCommunity", addr2.address)).to.be.revertedWith("Community Uses a cred access contract");
       });
       it("Should fail to allow users to remove neg cred when contract is responsible ", async function() {
-        await expect(ltgm.connect(addr1).removeNegCredsFromMember("CredCommunity", addr2.address)).to.be.revertedWith("Commmunity Uses a cred access contract");
+        await expect(ltgm.connect(addr1).removeNegCredsFromMember("CredCommunity", addr2.address)).to.be.revertedWith("Community Uses a cred access contract");
       });
 
       it("Should allow cred access contract to invite members", async function() {
