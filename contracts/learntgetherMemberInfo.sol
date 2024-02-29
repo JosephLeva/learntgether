@@ -9,7 +9,7 @@ contract learntgetherMembersInfo{
         string description;
         string[] degrees; 
         string[] awards;
-        string endpoint; // can be a link to X or wherever else needed
+        string endpoint; // can be aa link to X or wherever else needed
     }
 
 

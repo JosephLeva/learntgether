@@ -198,13 +198,13 @@ describe("Learntgether Reviewers Contract", function() {
     it ("Should pass upkeep check", async function() {
       await network.provider.send("evm_increaseTime", [proposalTime]);
       await network.provider.send("evm_mine");
-      const [upkeepneeded, performdata] =await ltgc.connect(owner).checkUpKeep();
+      const [upkeepneeded, performdata] =await ltgc.connect(owner).checkUpkeep();
       expect(upkeepneeded).to.be.true;
       
     });
 
     it ("Should fail upkeep check when time has not passed", async function() {
-      const [upkeepneeded, performdata] =await ltgc.connect(owner).checkUpKeep();
+      const [upkeepneeded, performdata] =await ltgc.connect(owner).checkUpkeep();
       expect(upkeepneeded).to.be.false;   
       
     });
@@ -217,7 +217,7 @@ describe("Learntgether Reviewers Contract", function() {
       await network.provider.send("evm_increaseTime", [proposalDelay+1]);
       await network.provider.send("evm_increaseTime", [proposalTime]);
       await network.provider.send("evm_mine");
-      const [upkeepneeded, performdata] =await ltgc.connect(owner).checkUpKeep();
+      const [upkeepneeded, performdata] =await ltgc.connect(owner).checkUpkeep();
       expect(upkeepneeded).to.be.true; 
       expect(performdata).to.equal("0x0000000000000000000000000000000000000000000000000000000000000002"); 
     });

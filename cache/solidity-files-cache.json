@@ -1435,8 +1435,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/learntgetherMembers.sol": {
-      "lastModificationDate": 1707676421617,
-      "contentHash": "33f4e1ee78249de718c1d7bcb3a6a410",
+      "lastModificationDate": 1709081616498,
+      "contentHash": "0a709b057eb3311ada2f39d402701c84",
       "sourceName": "contracts/learntgetherMembers.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1462,9 +1462,7 @@
           }
         }
       },
-      "imports": [
-        "hardhat/console.sol"
-      ],
+      "imports": [],
       "versionPragmas": [
         "^0.8.0"
       ],
@@ -1474,8 +1472,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/learntgetherCommunities.sol": {
-      "lastModificationDate": 1707365375770,
-      "contentHash": "7cdcb85d76b5d1ab8ca1ce1e94d0d739",
+      "lastModificationDate": 1709081594946,
+      "contentHash": "51e1eda2809cde724472e94b743f15c0",
       "sourceName": "contracts/learntgetherCommunities.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1501,9 +1499,7 @@
           }
         }
       },
-      "imports": [
-        "hardhat/console.sol"
-      ],
+      "imports": [],
       "versionPragmas": [
         "^0.8.0"
       ],
@@ -1596,8 +1592,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/learntgetherMemberInfo.sol": {
-      "lastModificationDate": 1704934437018,
-      "contentHash": "486a9bd79e1ed26eda9a3d2986118667",
+      "lastModificationDate": 1709081626154,
+      "contentHash": "7d701b6c7c93530c601cf2df623ce8d8",
       "sourceName": "contracts/learntgetherMemberInfo.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1634,8 +1630,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/learntgetherCommunityConsensus.sol": {
-      "lastModificationDate": 1705254212114,
-      "contentHash": "0c15a1be5bfd2369dac508aa09253435",
+      "lastModificationDate": 1709005737324,
+      "contentHash": "2db936eea5230798c416b21da0f49e35",
       "sourceName": "contracts/learntgetherCommunityConsensus.sol",
       "solcConfig": {
         "version": "0.8.20",

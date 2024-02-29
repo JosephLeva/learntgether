@@ -49,6 +49,7 @@ contract learntgetherCommunityConsensus{
 
     mapping(string => CCParams) public communityConsensus;
     mapping(uint256 => CCProposalParams) public CommunityConsensusProposals;
+    mapping(string => uint256[]) public ConsensusProposalArray;
 
 
     address private owner;
@@ -183,6 +184,7 @@ contract learntgetherCommunityConsensus{
         (bool _sent, ) = feeAddress.call{value: msg.value - communityFee}("");
         require(_sent, "Failed to send Ether");
         CommunityConsensusProposals[proposalId] = ccPP;
+        ConsensusProposalArray[_communityName].push(proposalId);
 
         
         return proposalId;
@@ -286,6 +288,9 @@ contract learntgetherCommunityConsensus{
     }
     function getCommunityReviewParams (string memory _communityName) external view returns (uint256 numReviewsForAcceptance,uint256 credsNeededForReview,uint256 percentAcceptsNeeded){
         return (communityConsensus[_communityName].numReviewsForAcceptance,communityConsensus[_communityName].credsNeededForReview,communityConsensus[_communityName].percentAcceptsNeeded);
+    }
+    function getConsensusProposalArray(string memory _communityName) external view returns (uint256[] memory){
+        return ConsensusProposalArray[_communityName];
     }
 
 

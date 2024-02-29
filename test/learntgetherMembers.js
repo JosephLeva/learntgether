@@ -190,11 +190,11 @@ describe("Learntgether Reviewers Contract", function() {
 
     it("Should fail to add positive cred if adder is not a member", async function() {
 
-      await expect(ltgm.connect(addr3).addPosCredsToMember(communityName, addr2.address)).to.be.revertedWith("You are not a member of this community.");
+      await expect(ltgm.connect(addr3).addPosCredsToMember(communityName, addr2.address)).to.be.revertedWith("You are not a member.");
     });
 
     it("Should fail to add positive cred if target is not a member", async function() {
-      await expect(ltgm.connect(addr2).addPosCredsToMember(communityName, addr3.address)).to.be.revertedWith("Target member doesn't exist of this community.");
+      await expect(ltgm.connect(addr2).addPosCredsToMember(communityName, addr3.address)).to.be.revertedWith("Target member DNE");
     });
 
     it("Should fail to add positive cred if already added", async function() {
@@ -203,7 +203,7 @@ describe("Learntgether Reviewers Contract", function() {
     });
 
     it("Should fail to add positive cred if target is self", async function() {
-      await expect(ltgm.connect(addr2).addPosCredsToMember(communityName, addr2.address)).to.be.revertedWith("You cannot edit your own creds.");
+      await expect(ltgm.connect(addr2).addPosCredsToMember(communityName, addr2.address)).to.be.revertedWith("You cannot edit own creds.");
     });
       
    });
@@ -234,11 +234,11 @@ describe("Learntgether Reviewers Contract", function() {
 
     it("Should fail to add negative cred if adder is not a member", async function() {
 
-      await expect(ltgm.connect(addr3).addNegCredsToMember(communityName, addr2.address)).to.be.revertedWith("You are not a member of this community.");
+      await expect(ltgm.connect(addr3).addNegCredsToMember(communityName, addr2.address)).to.be.revertedWith("You are not a member.");
     });
 
     it("Should fail to add negative cred if target is not a member", async function() {
-      await expect(ltgm.connect(addr2).addNegCredsToMember(communityName, addr3.address)).to.be.revertedWith("Target member doesn't exist of this community.");
+      await expect(ltgm.connect(addr2).addNegCredsToMember(communityName, addr3.address)).to.be.revertedWith("Target member DNE");
     });
 
     it("Should fail to add negative cred if already added", async function() {
@@ -247,7 +247,7 @@ describe("Learntgether Reviewers Contract", function() {
     });
 
     it("Should fail to add negative cred if target is self", async function() {
-      await expect(ltgm.connect(addr2).addNegCredsToMember(communityName, addr2.address)).to.be.revertedWith("You cannot edit your own creds.");
+      await expect(ltgm.connect(addr2).addNegCredsToMember(communityName, addr2.address)).to.be.revertedWith("You cannot edit own creds.");
     });
       
    });

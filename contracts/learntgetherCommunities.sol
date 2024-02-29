@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import "hardhat/console.sol";
 
 
 interface learntgetherMembersInterface{
-    function getIsMember( address _memberAddress, string memory _communitiesName) external view returns (bool);
-    function getMemberCreds(address _memberAddress, string memory _communitiesName) external view returns (uint256 creds);
-    
+    function getMemberCreds(address _member, string memory _community) external view returns (int256 creds); 
+    function getIsMember(address _member, string memory _community) external view returns (bool);
     }
 
 
@@ -68,7 +66,7 @@ contract learntgetherCommunities{
 
     uint256[] ActiveProposals;
     mapping(string => uint256[]) public porposalsByCommunity;
-    mapping(address=>bool)hasOpenProposal;
+    mapping(address=>bool) public hasOpenProposal;
 
     address private owner;
     uint256 public fee;
@@ -100,17 +98,17 @@ contract learntgetherCommunities{
     }
 
     modifier proposalRequirements(string memory _communityName){
-        // Ensure the community exists
+        // // Ensure the community exists
         require(communities[_communityName].creator != address(0), "Community doesn't exist");
-        // Ensure the proposer does not have an open proposal
+        // // Ensure the proposer does not have an open proposal
         require(!hasOpenProposal[tx.origin], "User has Open Review, Please wait untill it is processed.");
-        // Ensure the proposer is a member of the communities and has enough creds
+        // // Ensure the proposer is a member of the communities and has enough creds
 
         require(MemberContract.getIsMember(tx.origin, _communityName) == true, "You are not a member for this community.");
-        //Make sure creds are enough to propose
+        // //Make sure creds are enough to propose
         
-        require(MemberContract.getMemberCreds(tx.origin, _communityName) >= communities[_communityName].minCredsToProposeVote, "Insufficient creds to propose.");
-        // Ensure the proposer has paid the fee to cover upkeep 
+        require(MemberContract.getMemberCreds(tx.origin, _communityName) >= int256(communities[_communityName].minCredsToProposeVote), "Insufficient creds to propose.");
+        // // Ensure the proposer has paid the fee to cover upkeep 
 
         require(msg.value == fee, "Must send proposal fee");
         _;
@@ -334,13 +332,13 @@ contract learntgetherCommunities{
 
 
         // Ensure the voter has more creds than the minCredsToVote
-        uint256 voterCreds = MemberContract.getMemberCreds(msg.sender, proposal.communityName);
+        int256 voterCreds = MemberContract.getMemberCreds(msg.sender, proposal.communityName);
 
-        require(voterCreds >= communities[proposal.communityName].minCredsToVote, "Insufficient creds to vote.");
+        require(voterCreds >= int256(communities[proposal.communityName].minCredsToVote), "Insufficient creds to vote.");
 
 
         // Determine the amount of creds to count for the vote
-        uint256 credsToCount = (voterCreds > communities[proposal.communityName].maxCredsCountedForVote) ? communities[proposal.communityName].maxCredsCountedForVote : voterCreds;
+        uint256 credsToCount = (voterCreds > int256(communities[proposal.communityName].maxCredsCountedForVote)) ? communities[proposal.communityName].maxCredsCountedForVote : uint256(voterCreds);
         
 
         if (voteChoice) {
@@ -370,7 +368,7 @@ contract learntgetherCommunities{
         * @return performData bytes object cast from uint256 id for the lowest timestamp proposal where vote period has ended
     */
 
-    function checkUpKeep()  external view  returns( bool upkeepNeeded, bytes memory performData ){
+    function checkUpkeep()  external view  returns( bool upkeepNeeded, bytes memory performData ){
 
         upkeepNeeded = false;
         uint256 lowestId= 0;

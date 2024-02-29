@@ -7,7 +7,7 @@
       "inputs": [
         {
           "internalType": "string",
-          "name": "_communityName",
+          "name": "_community",
           "type": "string"
         }
       ],
@@ -26,7 +26,7 @@
       "inputs": [
         {
           "internalType": "string",
-          "name": "_communityName",
+          "name": "_community",
           "type": "string"
         }
       ],
@@ -45,7 +45,7 @@
       "inputs": [
         {
           "internalType": "string",
-          "name": "_communityName",
+          "name": "_community",
           "type": "string"
         }
       ],
@@ -64,7 +64,7 @@
       "inputs": [
         {
           "internalType": "string",
-          "name": "_communityName",
+          "name": "_community",
           "type": "string"
         }
       ],
