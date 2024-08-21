@@ -1,42 +1,76 @@
-# Decentralized Peer Review platform with Chainlink Automation 
-
-Learn Tgether is a Decentralized Peer Review Platform built to Enable Dynamic Communities the ability to form consenous on any piece of content on the internet.
+# Tgether - A Decentralized Consensus Platform
 
 ## Overview
 
-The project consists of 6 primary smart contracts:
+Tgether is a decentralized platform built on the Arbitrum Sepolia Testnet, designed to facilitate consensus-driven decision-making in communities. The platform allows users to join communities, participate in discussions, submit proposals, and review contributions through decentralized mechanisms. Our modular architecture ensures scalability and flexibility across various use cases.
 
-1. **learntgetherCommunities**: This contract manages Communities relevent to the platform. A community is a set of are made up of a set of paramteters defining their membership and democratic process.
+## Fees
 
-2. **learntgetherMembers**: This contract manages the Members of Communities. Communities have a karma based "cred" system. Members can apply cred postively or negatively on a per community basis.
+To support decentralized arbitration of proposals and post consensus, Tgether utilizes Chainlink Automation. Fees are only charged for functionality that requires upkeep, such as proposal submissions and post reviews. These fees are necessary to fund the networks that process the underlying transactions, ensuring that the consensus mechanisms remain secure and decentralized. The fees are directly linked to the operational costs and vary depending on the specific tasks being performed.
 
-3. **learntgetherMemberInfo**: This contract is a bit of filler, but allows for users to add a bit of info about themselves.
+## Smart Contracts Overview
 
-4. **learntgetherCommunityConesnsus**: This Contract provides the parameters for consenous defined by a community. New proposals for these values are created from this contract, while voting takes place on the original "Communities Contract" as a "Custom proposal."
+### 1. **Communities.sol**
+   - **Purpose**: Manages the creation and administration of communities, including handling membership fees and tracking community information.
+   - **Constructor**: Initializes the contract with the platform’s admin address and sets the base fee required for proposal submissions.
+   - **Important Note**: After deploying this contract, you need to call the `setCommunityContract` function in other contracts to set its address where needed.
 
-5. **learntgetherPosts**: This Contract allows users to create nfts linked to endpoints around the web, for use to review and come to consenous on. These nfts are not meant to show ownership of content posted, and the signee of NFT minting transactions are liable for any legal action taken for content they mint.
+### 2. **Members.sol**
+   - **Purpose**: Handles membership management within communities. Functions include adding/removing members, managing credentials, and tracking invitations.
+   - **Constructor**: Initializes the contract independently, without dependencies.
+   - **Important Note**: The `setMembersContract` function in other contracts must be called with the deployed address of this contract.
 
-6. **learntgetherPostConsensus**: This contract allows users to submit a post for a consenus review by a community. Communities can choose to accept or reject this content for their message or use case.
+### 3. **MemberInfo.sol** (Optional)
+   - **Purpose**: Stores additional member profile information such as bio, degrees, awards, and other metadata.
+   - **Constructor**: This contract does not require any external addresses but interacts with the `Members` contract to verify member identities.
 
-## Facilitating Decentralized Communities
+### 4. **CommunityConsensus.sol**
+   - **Purpose**: Implements the voting and consensus mechanisms within communities. This contract is critical for proposal evaluation.
+   - **Constructor**: Initializes independently but requires the address of `Communities.sol` to be set via the `setCommunityContract` function.
+   - **Important Note**: Call the `setCommunityContract` function after deployment to link this contract with the `Communities` contract.
 
-### Dynamic Governance
+### 5. **Posts.sol**
+   - **Purpose**: Manages content and posts submitted by members within a community.
+   - **Constructor**: Requires the address of the `CommunityConsensus.sol` contract to be set using the `setCommunityConsensusContract` function after deployment.
 
-The system is designed to be flexible, allowing communities to define their own rules and parameters. This means that each community can have its own unique governance model. Whether a community desires a fully democratic approach where every member has equal say or prefers a more autocratic model. It is up to them. 
+### 6. **PostConsensus.sol**
+   - **Purpose**: Implements consensus mechanisms specifically for evaluating posts and comments. It ensures that content is peer-reviewed according to community standards.
+   - **Constructor**: Initializes independently, but requires addresses of the following contracts:
+     - `CommunityConsensus.sol`
+     - `Members.sol`
+     - `Posts.sol`
+   - **Important Note**: The addresses for these contracts must be set using the `setCommunityConsensusContract`, `setMembersContract`, and `setPostsContract` functions respectively.
 
-### Peer Review System
+## Deployment Instructions
 
-The peer review system exemplifies the power of decentralized consenus. Reviewers, who are vetted and approved based on their credentials, review posts. The system ensures transparency and fairness, with Chainlink Automation automating the review process. The parameters for review, are desugned to be flexible and transparent in the same model described by the governance section above.
+Deploying the Tgether platform involves multiple steps due to the interdependencies between contracts. Follow these instructions carefully:
 
-### Infinite Expansion
+1. **Deploy `Communities.sol` and `Members.sol` first.**
+   - Deploy `Communities` independently and note the contract address.
+   - Deploy `Members`, noting the contract address as well.
 
-Following the example of learntgetherCommunityConesnsus Communities can extend their reach and define new use cases as needed. Note our Goal for this project is to not create "DAO's" these are simple transparent systems meant to solve specific problems, however use them as you see fit.
+2. **Update Contract Addresses:**
+   - After deploying `Communities` and `Members`, call the `setCommunityContract` and `setMembersContract` functions in the relevant contracts to establish the necessary links and avoid circular dependencies.
 
+3. **Deploy `MemberInfo.sol` (Optional).**
+   - This contract is optional and can be deployed separately to store additional member profile data.
 
-## Data Model
-![There is an issue with the data model image](./LTGDATA.png)
+4. **Deploy `CommunityConsensus.sol`.**
+   - Deploy independently and then call the `setCommunityContract` function with the address of the deployed `Communities` contract.
 
+5. **Deploy `Posts.sol`.**
+   - Deploy independently and call the `setCommunityConsensusContract` function with the address of the deployed `CommunityConsensus` contract.
 
-## Future Plans
-- Payouts for incentivized Review
-- Front End
+6. **Deploy `PostConsensus.sol`.**
+   - Deploy independently and call the following functions with the respective contract addresses:
+     - `setCommunityConsensusContract` for `CommunityConsensus.sol`
+     - `setMembersContract` for `Members.sol`
+     - `setPostsContract` for `Posts.sol`
+
+## How to Interact with the Contracts
+
+Once deployed, the contracts can be interacted with using Web3.js, ethers.js, or directly via the Arbitrum Sepolia network. The ABIs for each contract are available in the `src/contracts` directory and provide all the functions needed for community management, membership handling, proposal voting, and content reviews.
+
+---
+
+This README provides a high-level overview of Tgether and its deployment process. For more detailed examples and interactions, refer to the documentation or explore the contract functions directly.
