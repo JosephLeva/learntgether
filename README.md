@@ -10,35 +10,35 @@ To support decentralized arbitration of proposals and post consensus, Tgether ut
 
 ## Smart Contracts Overview
 
-### 1. **Communities.sol**
+### 1. **tgehterCommunities.sol**
    - **Purpose**: Manages the creation and administration of communities, including handling membership fees and tracking community information.
    - **Constructor**: Initializes the contract with the platform’s admin address and sets the base fee required for proposal submissions.
    - **Important Note**: After deploying this contract, you need to call the `setCommunityContract` function in other contracts to set its address where needed.
 
-### 2. **Members.sol**
+### 2. **tgehterMembers.sol**
    - **Purpose**: Handles membership management within communities. Functions include adding/removing members, managing credentials, and tracking invitations.
    - **Constructor**: Initializes the contract independently, without dependencies.
    - **Important Note**: The `setMembersContract` function in other contracts must be called with the deployed address of this contract.
 
-### 3. **MemberInfo.sol** (Optional)
+### 3. **tgetherMemberInfo.sol** (Optional)
    - **Purpose**: Stores additional member profile information such as bio, degrees, awards, and other metadata.
    - **Constructor**: This contract does not require any external addresses but interacts with the `Members` contract to verify member identities.
 
-### 4. **CommunityConsensus.sol**
+### 4. **tgetherCommunityConsensus.sol**
    - **Purpose**: Implements the voting and consensus mechanisms within communities. This contract is critical for proposal evaluation.
    - **Constructor**: Initializes independently but requires the address of `Communities.sol` to be set via the `setCommunityContract` function.
    - **Important Note**: Call the `setCommunityContract` function after deployment to link this contract with the `Communities` contract.
 
-### 5. **Posts.sol**
+### 5. **tgetherPosts.sol**
    - **Purpose**: Manages content and posts submitted by members within a community.
    - **Constructor**: Requires the address of the `CommunityConsensus.sol` contract to be set using the `setCommunityConsensusContract` function after deployment.
 
-### 6. **PostConsensus.sol**
+### 6. **tgetherPostConsensus.sol**
    - **Purpose**: Implements consensus mechanisms specifically for evaluating posts and comments. It ensures that content is peer-reviewed according to community standards.
    - **Constructor**: Initializes independently, but requires addresses of the following contracts:
-     - `CommunityConsensus.sol`
-     - `Members.sol`
-     - `Posts.sol`
+     - `tgetherCommunityConsensus.sol`
+     - `tgetherMembers.sol`
+     - `tgehterPosts.sol`
    - **Important Note**: The addresses for these contracts must be set using the `setCommunityConsensusContract`, `setMembersContract`, and `setPostsContract` functions respectively.
 
 ## Deployment Instructions
@@ -69,8 +69,7 @@ Deploying the Tgether platform involves multiple steps due to the interdependenc
 
 ## How to Interact with the Contracts
 
-Once deployed, the contracts can be interacted with using Web3.js, ethers.js, or directly via the Arbitrum Sepolia network. The ABIs for each contract are available in the `src/contracts` directory and provide all the functions needed for community management, membership handling, proposal voting, and content reviews.
-
+Once deployed, the contracts can be interacted with using Web3.js, ethers.js, or directly via the Arbitrum Sepolia network.
 ---
 
 This README provides a high-level overview of Tgether and its deployment process. For more detailed examples and interactions, refer to the documentation or explore the contract functions directly.
