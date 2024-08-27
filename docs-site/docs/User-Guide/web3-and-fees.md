@@ -34,4 +34,4 @@ In short, these fees are not just charges—they’re essential contributions to
 
 Web3 is at the core of tgether’s mission to provide a decentralized, trustless platform for consensus. By leveraging blockchain and charging fees for key operations, we ensure that the platform remains sustainable and aligned with the principles of decentralization. We’re committed to providing communities with a space where they can govern themselves without outside interference, relying solely on transparent processes and immutable data.
 
-Ready to dive deeper into how tgether works? Check out our [Developer Docs](../developer-docs/getting-started.md) to learn more.
+Ready to dive deeper into how tgether works? Check out our [Developer Docs](../Developer-Docs/getting-started.md) to learn more.

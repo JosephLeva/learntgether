@@ -86,6 +86,14 @@ const config = {
             position: 'left',
             label: 'Docs',
           },
+          {
+            label: 'GitHub',
+            href: 'https://github.com/josephleva/learntgether',
+          },
+          {
+            label: 'Whitepaper',
+            href: 'https://tgetherpublic.s3.amazonaws.com/tgether_whitepaper.pdf'
+          }
         ],
       },
       footer: {
