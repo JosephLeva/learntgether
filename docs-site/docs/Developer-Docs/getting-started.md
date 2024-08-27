@@ -16,7 +16,7 @@ In this guide, we’ll explore:
 
 - **Custom Proposals**: Extend tgether’s capabilities by integrating custom proposals tailored to your community’s specific goals, allowing you to automate complex workflows and reach consensus on unique use cases.
 
-- **Custom Cred Access Contracts**: Discover how you can create your own custom contracts to define membership access and reputation systems, giving communities full control over how they manage their members.
+- **Custom Member Access Contracts**: Discover how you can create your own custom contracts to define membership access and reputation systems, giving communities full control over how they manage their members.
 
 ## Getting Started with Development
 
