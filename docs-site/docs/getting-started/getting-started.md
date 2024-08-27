@@ -47,5 +47,5 @@ Choose the path that best suits your needs:
 
 <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
   <a href="/docs/user-guide/getting-started" className="button button--primary">User Docs</a>
-  <a href="/docs/developer-guide/getting-started" className="button button--secondary">Developer Docs</a>
+  <a href="/docs/developer-docs/getting-started" className="button button--secondary">Developer Docs</a>
 </div>
