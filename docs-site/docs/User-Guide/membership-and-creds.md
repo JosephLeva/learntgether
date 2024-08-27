@@ -22,7 +22,7 @@ This basic mechanism encourages positive engagement while giving members a way t
 
 ### Customizing the Cred System
 
-While the default cred system is straightforward, tgether also allows communities to define more advanced rules for membership and cred management. This can be achieved through the [memberAccess Contract](/docs/developer-docs/membership-and-creds), which gives the community full control over how membership is handled and how creds are calculated.
+While the default cred system is straightforward, tgether also allows communities to define more advanced rules for membership and cred management. This can be achieved through the [memberAccess Contract](../Developer-Docs/membership-and-creds.md), which gives the community full control over how membership is handled and how creds are calculated.
 
 For example, a community might want to:
 

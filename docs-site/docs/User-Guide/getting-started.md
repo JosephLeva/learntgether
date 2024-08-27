@@ -36,7 +36,7 @@ When creating a community in tgether, you’ll define a set of parameters that s
    A true or false setting to determine whether the community is invite-only. When enabled, only invited members can join.
 
 8. **Member Access Contract (`memberAccessContract`)**  
-   **For advanced use,** this allows a custom contract to control membership access. It’s important to audit and thoroughly test any custom contracts before use, as they directly influence who can join and participate in the community. View docs to read more [memberAccess Contracts](/docs/developer-docs/membership-and-creds)
+   **For advanced use,** this allows a custom contract to control membership access. It’s important to audit and thoroughly test any custom contracts before use, as they directly influence who can join and participate in the community. View docs to read more [memberAccess Contracts](../Developer-Docs/membership-and-creds.md)
 
    > **Note:** If a community decides to delegate to a cred access contract, the owner cannot directly manage invitations and the default creds process is voided. To regain control, one would need to propose a new set of parameters to the community. This could be impossible depending on other parameters. If unsure always set this to `0x0000000000000000000000000000000000000000`
 
