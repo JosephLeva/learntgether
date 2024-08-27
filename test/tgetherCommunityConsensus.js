@@ -111,8 +111,34 @@ describe("tgether Reviewers Contract", function() {
       await expect(tgcc.connect(addr1).CreateCCProposal(communityName, numReviewsForAcceptance, credsNeededForReview, percentAcceptsNeeded, consensusTime, consensusTypes, { value: feeAmount })).to.be.revertedWith("Fee price not sent");
 
     });
-
-
+    
+    it("Should check to make sure the proposer owns the proposal", async function() {
+      await tgcc.connect(owner).setCCParams(
+        communityName,
+        numReviewsForAcceptance,
+        credsNeededForReview,
+        percentAcceptsNeeded,
+        consensusTime,
+        consensusTypes
+      );
+    
+      // Create the proposal
+      await tgcc.connect(addr1).CreateCCProposal(
+        communityName,
+        numReviewsForAcceptance,
+        credsNeededForReview,
+        percentAcceptsNeeded,
+        consensusTime,
+        consensusTypes,
+        { value: feeAmount.add(ccfeeAmount) }
+      );
+    
+      // Fetch the proposal
+      const proposal = await tgc.proposals(1); // Assuming the first proposal has ID 1
+    
+      // Check if the proposer address is correct
+      expect(proposal.proposer).to.equal(addr1.address);
+        });
 
   });
 
@@ -133,7 +159,7 @@ describe("tgether Reviewers Contract", function() {
           blockNumber: 1,
           blockHash: ethers.utils.formatBytes32String("0xabcdef1234567890"),
           source: tgc.address,
-          topics: [ethers.utils.hexZeroPad(tgcc.address, 32), ethers.utils.hexZeroPad(ethers.BigNumber.from(1).toHexString(), 32)],
+          topics: [ethers.utils.hexZeroPad(tgcc.address, 32), ethers.utils.hexZeroPad(tgcc.address, 32), ethers.utils.hexZeroPad(ethers.BigNumber.from(1).toHexString(), 32)],
           data: "0xabcdef1234567890",
         },
         "0x"
@@ -154,12 +180,11 @@ describe("tgether Reviewers Contract", function() {
           blockNumber: 1,
           blockHash: ethers.utils.formatBytes32String("0xabcdef1234567890"),
           source: tgc.address,
-          topics: [ethers.utils.hexZeroPad(tgc.address, 32), ethers.utils.hexZeroPad(ethers.BigNumber.from(1).toHexString(), 32)],
+          topics: [ethers.utils.hexZeroPad(zeroAddress, 32), /* wrong address*/ ethers.utils.hexZeroPad(tgc.address, 32), ethers.utils.hexZeroPad(ethers.BigNumber.from(1).toHexString(), 32)],
           data: "0xabcdef1234567890",
         },
         "0x"
       );
-
       expect(result[0]).to.equal(false);
       expect(result[1]).to.equal(ethers.utils.hexZeroPad(ethers.BigNumber.from(1).toHexString(), 32));
 
@@ -175,7 +200,7 @@ describe("tgether Reviewers Contract", function() {
           blockNumber: 1,
           blockHash: ethers.utils.formatBytes32String("0xabcdef1234567890"),
           source: tgc.address,
-          topics: [ethers.utils.hexZeroPad(tgcc.address, 32), ethers.utils.hexZeroPad(ethers.BigNumber.from(2).toHexString(), 32)],
+          topics: [ethers.utils.hexZeroPad(zeroAddress, 32), ethers.utils.hexZeroPad(tgcc.address, 32), ethers.utils.hexZeroPad(ethers.BigNumber.from(2).toHexString(), 32)],
           data: "0xabcdef1234567890",
         },
         "0x"

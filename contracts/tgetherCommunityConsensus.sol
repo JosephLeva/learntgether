@@ -193,8 +193,8 @@ contract tgetherCommunityConsensus is ILogAutomation{
         Log calldata log,
         bytes memory 
     ) external view returns (bool upkeepNeeded, bytes memory performData) {
-        address _contractAddress = bytes32ToAddress(log.topics[0]);
-        uint256 _proposalId = uint256(log.topics[1]);
+        address _contractAddress = bytes32ToAddress(log.topics[1]);
+        uint256 _proposalId = uint256(log.topics[2]);
 
         if(_contractAddress == thisAddress && CommunityConsensusProposals[_proposalId].proposer != address(0) && CommunityConsensusProposals[_proposalId].upkeeped == false ){
             upkeepNeeded = true;

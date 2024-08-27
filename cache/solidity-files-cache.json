@@ -1696,8 +1696,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/tgetherCommunityConsensus.sol": {
-      "lastModificationDate": 1723948382179,
-      "contentHash": "359c183ff6b4cc31ef6ecb615b194062",
+      "lastModificationDate": 1724653553779,
+      "contentHash": "a78c8b8c6a68b94ec4292497bced4d09",
       "sourceName": "contracts/tgetherCommunityConsensus.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1777,8 +1777,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/tgehterPostConsensus.sol": {
-      "lastModificationDate": 1723948361416,
-      "contentHash": "990f40c2884e069fd72e825aacc3d79e",
+      "lastModificationDate": 1724310709440,
+      "contentHash": "2da95289da930788bd0db4f2c764c927",
       "sourceName": "contracts/tgehterPostConsensus.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1820,8 +1820,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/tgetherCommunities.sol": {
-      "lastModificationDate": 1723948390549,
-      "contentHash": "1c8daaef1311b68b82d275e42aa889b7",
+      "lastModificationDate": 1724433285300,
+      "contentHash": "258d78f080029841a581d68129decc51",
       "sourceName": "contracts/tgetherCommunities.sol",
       "solcConfig": {
         "version": "0.8.20",

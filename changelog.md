@@ -4,7 +4,20 @@ All notable changes to this project will be documented in this file.
  
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
+
+## [0.1.1] - 2024-08-25
  
+### Added
+- Added After consensus flag to reviews
+    - After Consensus will be used for eventual incentive payout contracts 
+- Added Docusaurus! Better Docs were needed as we prep for audits and mainnet :)
+### Changed
+- Updated proposals.propser to tx.origin instead of msg.sender to accomodate custom proposals
+- Changed the log topic array in Community Consensus to reflect actual logs
+- MinorComment changes
+### Fixed 
+- Log automations were previously not working made changes above to reflect
+
 ## [0.1.0] - 2024-08-17
  
 ### Added

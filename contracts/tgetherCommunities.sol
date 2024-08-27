@@ -193,7 +193,7 @@ contract tgetherCommunities is AutomationCompatibleInterface{
         // Create a new proposal using the proposalCounter as an ID
 
         Proposal storage prop = proposals[proposalCounter];
-        prop.proposer = msg.sender;
+        prop.proposer = tx.origin;
         prop.communityName= _communityName;
         prop.timestamp= block.timestamp;
         prop.activeProposalsIndex= ActiveProposals.length; //do not need a -1 because we have not added to array yet
@@ -464,7 +464,7 @@ contract tgetherCommunities is AutomationCompatibleInterface{
 
         // Swap and pop
 
-        // set our target index to the users current cred for swap
+        // set our target index to the proposalId for swap
         uint256 index = proposals[proposalId].activeProposalsIndex;
 
         // check if index is last in array
@@ -496,7 +496,7 @@ contract tgetherCommunities is AutomationCompatibleInterface{
        
         // Swap and pop
 
-        // set our target index to the users current cred for swap
+        // set our target index to the proposalId for swap
         uint256 index = proposals[_propId].activeProposalsIndex;
 
         // Avoid the for loop if somehow the list is empty (we dont want to do anything anyway)

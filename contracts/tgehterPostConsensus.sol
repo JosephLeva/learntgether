@@ -49,6 +49,7 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
         uint256 consensus;
         string consensusType;
         uint256 creds;
+        bool afterConsensus;
     }
 
 
@@ -89,12 +90,12 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
         // Modifiers
 
     modifier ownerOrAutomation() {
-        require(msg.sender == owner || msg.sender == AutomationContractAddress, "Not the contract owner or Automation Registry Contract");
+        require(msg.sender == owner || msg.sender == AutomationContractAddress, "Not the contract owner or Automation Forwarder Contract");
         _;
     }   
 
     modifier ownerOnly() {
-        require(msg.sender == owner || msg.sender == AutomationContractAddress, "Not the contract owner or Automation Registry Contract");
+        require(msg.sender == owner, "Not the contract owner");
         _;
     }   
 
@@ -126,7 +127,7 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
     event PostSubmission(uint256 indexed postId, uint256 indexed communitySubmissionId);
     event CommunitySubmitted(uint256 indexed communtiySubmissionId, string indexed communityName, uint256 timestamp, uint256 consensusTime);
     event ReviewCreated(uint256 indexed reviewId, uint256 indexed communitySubmissionId, address indexed member);
-    event ReviewSubmitted(uint256 indexed reviewId, string consensus, uint256 creds, string content);
+    event ReviewSubmitted(uint256 indexed reviewId, string consensus, uint256 creds, string content, bool afterConsensus);
     event ConsensusUpdated(uint256 indexed communitySubmissionId, uint256 postId, string newConsensus);
     event ActiveSubmissionsIndexUpdated(uint256 communitySubmissionId, uint256 index);
     event Keywords(uint256 postId, string keyword);
@@ -227,13 +228,20 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
             consensusType = consensusTypes[_consensus - defaultConsenousTypes.length - 1]; // Adjust index by 1
         }
 
+        bool _afterConsensus = false;
+        
+        if (block.timestamp >= CommunitySubmissions[_communitySubmissionId].timestamp + CommunitySubmissions[_communitySubmissionId].consensusTime) {
+            _afterConsensus = true;
+        }
+
         // Create a new review
         Review memory newReview = Review({
             member: msg.sender,
             content: _content,
             consensus: _consensus,
             consensusType: consensusType,
-            creds: creds
+            creds: creds,
+            afterConsensus: _afterConsensus
         });
 
 
@@ -244,7 +252,7 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
 
 
         // Add the review to the post's reviews
-        emit ReviewSubmitted(reviewCounter, consensusType, creds, _content);
+        emit ReviewSubmitted(reviewCounter, consensusType, creds, _content, _afterConsensus);
 
         reviewCounter++;
 
@@ -397,7 +405,7 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
 
             // Swap and pop
 
-            // set our target index to the users current cred for swap
+            // set our target index to the index of the submission
             uint256 index = ActiveSubmissionsIndexes[ssid];
             // check if index is last in array
             if (index != ActiveSubmissions.length -1) {
