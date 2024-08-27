@@ -4,7 +4,7 @@ sidebar_position: 1
 ---
 # Getting Started!
 
-Welcome to **tgether**, a decentralized consensus platform that empowers users to create purpose-driven communities and achieve agreements on any topic. Whether you’re looking to build a peer-reviewed community, assess content, or achieve consensus on important decisions, tgether gives you the flexibility and tools to bring your vision to life.
+Welcome to **tgether**—a decentralized platform that empowers users to build purpose-driven communities and reach agreements on just about anything! Whether it's scientific peer review, fact-checking social media, classifying age-appropriate content, or something entirely new, tgether lets you define your community’s purpose and methods of collaboration. Built to be completely trustless, all data is transparently shared and secured on the blockchain, so your community can focus on collaboration without worrying about data ownership or censorship.
 
 ## Terminology
 

@@ -87,12 +87,16 @@ const config = {
             label: 'Docs',
           },
           {
-            label: 'GitHub',
-            href: 'https://github.com/josephleva/learntgether',
+            label: 'Site',
+            href: 'https://tgether.io',
           },
           {
             label: 'Whitepaper',
             href: 'https://tgetherpublic.s3.amazonaws.com/tgether_whitepaper.pdf'
+          },
+          {
+            label: 'GitHub',
+            href: 'https://github.com/josephleva/learntgether',
           }
         ],
       },
@@ -112,7 +116,7 @@ const config = {
             title: 'Community',
             items: [
               {
-                label: 'Discussuins',
+                label: 'Disscussions',
                 href: 'https://github.com/JosephLeva/learntgether/discussions',
               }
             ],
