@@ -14,7 +14,7 @@ const memberAccessContract = zeroAddress;
 
 const feeAmount = ethers.utils.parseEther("1"); // Replace "1" with the actual fee amount
 
-describe("tgether Reviewers Contract", function() {
+describe("tgether Communities Contract", function() {
   let tgr
   let tgs
   let owner;
@@ -33,9 +33,15 @@ describe("tgether Reviewers Contract", function() {
     tgm = await tgetherMem.deploy();
     await tgm.deployed();
 
+    const tgetherFund = await ethers.getContractFactory("MOCKFundContract");
+    tgf = await tgetherFund.deploy();
+    await tgf.deployed();
+
     const tgetherCom = await ethers.getContractFactory("tgetherCommunities");
-    tgc = await tgetherCom.deploy(mockFeePrice, owner.address);
+    tgc = await tgetherCom.deploy(mockFeePrice, tgf.address);
     await tgc.deployed();
+    
+
     
     await tgm.connect(owner).settgetherCommunities(tgc.address);
     await tgc.connect(owner).settgetherMembersContract(tgm.address);
@@ -69,12 +75,12 @@ describe("tgether Reviewers Contract", function() {
       });
   
       it ("Should create a Community Proposals", async function() {
-        const _bal = await ethers.provider.getBalance(owner.address)
+        const _bal = await ethers.provider.getBalance(tgf.address)
         await tgc.connect(addr1).CommunityProposal(communityName, minCredsToProposeVote+1, minCredsToVote+1, maxCredsCountedForVote+1, minProposalVotes+1,"0x0000000000000000000000000000000000000001" , proposalTime+1, proposalDelay +1, !isInviteOnly, { value: feeAmount });
         const propType = await tgc.getProposalType(1);
         expect(propType).to.equal(1);
         const [ _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _memberAccessContract, _proposalTime, _proposalDelay, _isInviteOnly]= await tgc.CommunityProposals(1);
-        const _afterbal = await ethers.provider.getBalance(owner.address)
+        const _afterbal = await ethers.provider.getBalance(tgf.address)
 
         expect(_minCredsToProposeVote).to.equal(minCredsToProposeVote +1);
         expect(_minCredsToVote).to.equal(minCredsToVote +1);
@@ -111,9 +117,9 @@ describe("tgether Reviewers Contract", function() {
       });
   
       it ("Should create a Custom Proposals", async function() {
-        const _bal = await ethers.provider.getBalance(owner.address)
+        const _bal = await ethers.provider.getBalance(tgf.address)
         await tgc.connect(addr1).CustomProposal(communityName, "0x0000000000000000000000000000000000000001", { value: feeAmount });
-        const _afterbal = await ethers.provider.getBalance(owner.address)
+        const _afterbal = await ethers.provider.getBalance(tgf.address)
         const propType = await tgc.getProposalType(1);
         expect(propType).to.equal(2);
         const customprop = await tgc.CustomProposals(1);

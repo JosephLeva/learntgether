@@ -1696,8 +1696,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/tgetherCommunityConsensus.sol": {
-      "lastModificationDate": 1724653553779,
-      "contentHash": "a78c8b8c6a68b94ec4292497bced4d09",
+      "lastModificationDate": 1725947291425,
+      "contentHash": "cccd3fcaa06c185dc78f9e1bdad552f5",
       "sourceName": "contracts/tgetherCommunityConsensus.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1732,7 +1732,8 @@
       ],
       "artifacts": [
         "tgetherCommunityConsensus",
-        "tgetherCommuunitiesInterfact"
+        "tgetherCommuunitiesInterfact",
+        "tgetherFundInterface"
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/tgehterPosts.sol": {
@@ -1777,8 +1778,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/tgehterPostConsensus.sol": {
-      "lastModificationDate": 1724310709440,
-      "contentHash": "2da95289da930788bd0db4f2c764c927",
+      "lastModificationDate": 1725950587487,
+      "contentHash": "1b865e28ca3dcee57ebfc86856b49f99",
       "sourceName": "contracts/tgehterPostConsensus.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1814,14 +1815,15 @@
       ],
       "artifacts": [
         "tgetherCommunityConsensusInterface",
+        "tgetherFundInterface",
         "tgetherMembersInterface",
         "tgetherPostConsensus",
         "tgetherPostsInterface"
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/tgetherCommunities.sol": {
-      "lastModificationDate": 1724433285300,
-      "contentHash": "258d78f080029841a581d68129decc51",
+      "lastModificationDate": 1725949387315,
+      "contentHash": "00116ccca2d54926968c1645400a0b5b",
       "sourceName": "contracts/tgetherCommunities.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -1855,6 +1857,7 @@
       ],
       "artifacts": [
         "tgetherCommunities",
+        "tgetherFundInterface",
         "tgetherMembersInterface"
       ]
     },
@@ -1893,6 +1896,80 @@
       "artifacts": [
         "tgetherCommuityInterface",
         "tgetherMembers"
+      ]
+    },
+    "/Users/joeleva/dev2/gitl/learntgether/contracts/MOCKFundContract.sol": {
+      "lastModificationDate": 1725949377098,
+      "contentHash": "a98f2ed11ec8b3fe4198056af11c7c85",
+      "sourceName": "contracts/MOCKFundContract.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "viaIR": true,
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "MOCKFundContract"
+      ]
+    },
+    "/Users/joeleva/dev2/gitl/learntgether/contracts/tgetherFund.sol": {
+      "lastModificationDate": 1725936420776,
+      "contentHash": "a137040a730e04422d170c03d9bfdcfd",
+      "sourceName": "contracts/tgetherFund.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "viaIR": true,
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC677",
+        "ISushiSwapRouter",
+        "tgetherFund"
       ]
     }
   }

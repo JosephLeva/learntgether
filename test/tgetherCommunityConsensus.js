@@ -41,13 +41,17 @@ describe("tgether Reviewers Contract", function() {
     tgm = await tgetherMem.deploy();
     await tgm.deployed();
 
+    const tgetherFund = await ethers.getContractFactory("MOCKFundContract");
+    tgf = await tgetherFund.deploy();
+    await tgf.deployed();
+
     const tgetherCom = await ethers.getContractFactory("tgetherCommunities");
-    tgc = await tgetherCom.deploy(mockFeePrice, owner.address);
+    tgc = await tgetherCom.deploy(mockFeePrice, tgf.address);
     await tgc.deployed();
 
 
     const tgetherComCon = await ethers.getContractFactory("tgetherCommunityConsensus");
-    tgcc = await tgetherComCon.deploy(ccfeeAmount, tgc.address, mockFeePrice, addr5.address );
+    tgcc = await tgetherComCon.deploy(ccfeeAmount, tgc.address, mockFeePrice, tgf.address );
     await tgcc.deployed();    
     await tgm.connect(owner).settgetherCommunities(tgc.address);
     await tgc.connect(owner).settgetherMembersContract(tgm.address);
@@ -92,13 +96,11 @@ describe("tgether Reviewers Contract", function() {
 
     
       await tgcc.connect(owner).setCCParams(communityName, numReviewsForAcceptance, credsNeededForReview, percentAcceptsNeeded, consensusTime, consensusTypes);
-      const _balance = await ethers.provider.getBalance(owner.address);
-      const _balance2 = await ethers.provider.getBalance(addr5.address);
+      const _balance = await ethers.provider.getBalance(tgf.address);
       const prop = await tgcc.connect(addr1).CreateCCProposal(communityName, numReviewsForAcceptance, credsNeededForReview, percentAcceptsNeeded, consensusTime, consensusTypes, { value: feeAmount.add(ccfeeAmount) });
-      const _afterbal = await ethers.provider.getBalance(owner.address);
-      const _afterbal2 = await ethers.provider.getBalance(addr5.address);
-      expect(_afterbal).to.equal(_balance.add(feeAmount));
-      expect(_afterbal2).to.equal(_balance2.add(ccfeeAmount));
+      const _afterbal = await ethers.provider.getBalance(tgf.address);
+
+      expect(_afterbal).to.equal(_balance.add(feeAmount.add(ccfeeAmount)));
 
       const proposal = await tgc.connect(owner).proposals(1)
       expect(proposal[3]).to.equal(2);

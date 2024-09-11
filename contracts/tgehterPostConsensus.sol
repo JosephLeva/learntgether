@@ -23,6 +23,10 @@ interface tgetherPostsInterface{
     function getPostExists(uint256 _postId) external view returns(bool);
 }
 
+interface tgetherFundInterface{
+        function fundUpkeep(address _contractAddress) external payable returns (bool);
+    }
+
 contract tgetherPostConsensus is AutomationCompatibleInterface{
 
     struct CommunitySubmission{
@@ -84,7 +88,7 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
 
     uint256 public maxReviews;  //We have a max reviews value to ensure to avoid spam reviews clogging active proposals
     address owner;
-    address payable feeAddress;
+    tgetherFundInterface public FundContract;
 
 
         // Modifiers
@@ -99,7 +103,7 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
         _;
     }   
 
-    constructor(address _CommunityConsensusAddress, address _MembersContract, address _PostContract, uint256 _fee, address payable _feeAddress ) {
+    constructor(address _CommunityConsensusAddress, address _MembersContract, address _PostContract, uint256 _fee, address  _fundAddress ) {
         owner= msg.sender;
 
         CommunityConsensusContract= tgetherCommunityConsensusInterface(_CommunityConsensusAddress);
@@ -107,7 +111,7 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
         PostsContract= tgetherPostsInterface(_PostContract);
 
         consensusFee = _fee;
-        feeAddress = _feeAddress;
+        FundContract = tgetherFundInterface(_fundAddress);
 
         reviewCounter= 1;
         csCounter = 1;
@@ -141,6 +145,21 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
     @param _postId uint256 post id to be submitted
     @param _communityName string name of the community to be updated.
     */
+
+    /**
+    * DISCLAIMER:
+    * By signing and submitting this transaction, you acknowledge that you are contributing funds to a shared pool 
+    * rather than directly funding your individual upkeep execution. This pooling mechanism is designed to optimize 
+    * resource allocation and minimize transaction costs.
+    *
+    * Please be aware that price volatility may affect the availability of funds required to process your upkeep. 
+    * In such cases, your upkeep may not be automatically executed. However, you retain the option to manually 
+    * execute your upkeep at any time by calling the manualUpkeepPost function.
+    *
+    * Ensure you understand the risks associated with price fluctuations and the potential impact on the automatic 
+    * processing of your upkeep.
+    */
+
    function submitToCommunity(uint256 _postId, string memory _communityName) external payable returns (uint256 )  {
         // Check if the post exists
         require(PostsContract.getPostExists(_postId), "Post does not exist");
@@ -161,16 +180,14 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
             //  we only charge a fee if a consensus is Needed
             require(msg.value == consensusFee, "Must send proposal fee");
 
-            (bool _sent, ) = feeAddress.call{value: msg.value}("");
-            require(_sent, "Failed to send Ether");
-
-            
+        bool _isFunded = FundContract.fundUpkeep{value: msg.value}(address(this));
+        if (_isFunded) {
             newCommunitySubmission.consensusType= defaultConsenousTypes[0];
             // Add the post to the active reviews array
             ActiveSubmissions.push(csCounter);
             ActiveSubmissionsIndexes[csCounter] = ActiveSubmissions.length - 1;
             emit ActiveSubmissionsIndexUpdated(csCounter, ActiveSubmissions.length - 1);
-
+        }
         }
 
         // Set Various Search Mappings
@@ -261,169 +278,175 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
 
     }
 
+    // Internal function to determine if a submission needs upkeep
+    /**
+     * @notice Checks if a specific submission requires upkeep based on its review period expiration and review consensus.
+     * @param submissionId The ID of the submission to check for upkeep.
+     * @return upkeepNeeded A boolean indicating whether the upkeep is needed for the given submission.
+     * @return resultId An integer indicating the result of the review process: positive for acceptance, negative for rejection.
+     */
+    function _checkSubmissionForUpkeep(uint256 submissionId) internal view returns (bool upkeepNeeded, int256 resultId) {
+        upkeepNeeded = false;
+        resultId = 0;
+
+        // Check if the review period has expired for the submission
+        uint256 reviewPeriodExpired = CommunitySubmissions[submissionId].timestamp + CommunitySubmissions[submissionId].consensusTime;
+
+        if (reviewPeriodExpired <= block.timestamp) {
+            upkeepNeeded = true;
+            resultId = _processReviews(submissionId);
+        }
+    }
+
+    // Internal function to process reviews and determine consensus
+    /**
+     * @notice Processes the reviews for a given submission to determine whether it is accepted or rejected.
+     * @param submissionId The ID of the submission being reviewed.
+     * @return resultId An integer representing the outcome of the review process: positive for accepted, negative for rejected.
+     */
+    function _processReviews(uint256 submissionId) internal view returns (int256 resultId) {
+        (uint256 numReviewsForAcceptance, uint256 credsNeededForReview, uint256 percentAcceptsNeeded) =
+            CommunityConsensusContract.getCommunityReviewParams(CommunitySubmissions[submissionId].communityName);
+
+        uint256[] memory reviewList = submmisionReviews[submissionId];
+
+        // Check if there are enough reviews
+        if (reviewList.length < numReviewsForAcceptance) {
+            return int256(submissionId) * -1; // Rejected due to insufficient reviews
+        }
+
+        uint256 acceptedReviewsCount = 0;
+        uint256 totalCount = 0;
+        uint256 upperbound = reviewList.length > maxReviews ? maxReviews : reviewList.length;
+
+        // Loop through the reviews to count the number of accepted and total reviews
+        for (uint256 i = 0; i < upperbound; i++) {
+            (uint256 reviewConsensus, uint256 reviewCreds) = this.getReviewConsenous(reviewList[i]);
+            if (reviewCreds >= credsNeededForReview) {
+                totalCount++;
+                if (reviewConsensus == 2) { // Assuming 2 indicates "Accepted"
+                    acceptedReviewsCount++;
+                }
+            }
+        }
+
+        // Determine the acceptance status based on review counts
+        if (totalCount == 0 || totalCount < numReviewsForAcceptance) {
+            return int256(submissionId) * -1; // Rejected due to insufficient valid reviews
+        }
+
+        uint256 percentAcceptedByCount = (acceptedReviewsCount * 100) / totalCount;
+        return percentAcceptedByCount >= percentAcceptsNeeded ? int256(submissionId) : int256(submissionId) * -1;
+    }
+
+    // Internal function to perform upkeep on a submission
+    /**
+     * @notice Updates the consensus status of a submission and manages the active submissions list.
+     * @param resultId An integer indicating the result of the review process: positive for acceptance, negative for rejection.
+     */
+    function _performSubmissionUpkeep(int256 resultId) internal {
+        bool isAccepted = resultId > 0;
+        uint256 submissionId = isAccepted ? uint256(resultId) : uint256(-resultId);
+
+        // Update the consensus status and manage the active submissions list
+        if (
+            submissionId != 0 &&
+            block.timestamp >= CommunitySubmissions[submissionId].timestamp + CommunitySubmissions[submissionId].consensusTime &&
+            CommunitySubmissions[submissionId].timestamp != 0 &&
+            ActiveSubmissionsIndexes[submissionId] != 0
+        ) {
+            CommunitySubmissions[submissionId].consensusType = isAccepted ? defaultConsenousTypes[1] : defaultConsenousTypes[2];
+            emit ConsensusUpdated(submissionId, CommunitySubmissionToPost[submissionId], CommunitySubmissions[submissionId].consensusType);
+
+            // Swap and pop logic for removing the submission from active submissions
+            uint256 index = ActiveSubmissionsIndexes[submissionId];
+            if (index != ActiveSubmissions.length - 1) {
+                ActiveSubmissions[index] = ActiveSubmissions[ActiveSubmissions.length - 1];
+                ActiveSubmissionsIndexes[ActiveSubmissions[ActiveSubmissions.length - 1]] = index;
+                emit ActiveSubmissionsIndexUpdated(ActiveSubmissions[index], index);
+            }
+            ActiveSubmissionsIndexes[submissionId] = 0;
+            ActiveSubmissions.pop();
+        }
+    }
+
+    // Automated checkUpkeep function
     /*
-        * @notice Checks if upkeep is needed for active Reviews.
-        * @dev Loops thorugh the active Reviews array to find Reveiws where period has Reviewtime has ceased. Aims to grab the lowest timestamp as the next to be processed.
-        * @param check data (unused in this function but might be needed for interface compatibility).
-        * @return upkeepNeeded Boolean indicating if upkeep is needed.
-        * @return performData bytes object cast from uint256 id for the lowest timestamp post where review periord has ended
-    */
-    function checkUpkeep(
-        bytes calldata /* checkData */
-    )
+     * @notice Checks if there are any submissions that need upkeep based on their review periods.
+     * @param checkData Additional data passed to the function (not used in this implementation).
+     * @return upkeepNeeded A boolean indicating if upkeep is needed.
+     * @return performData Encoded data indicating the submission ID to be processed during performUpkeep.
+     */
+
+    function checkUpkeep(bytes calldata /* checkData */)
         external
         view
         override
-        returns (bool upkeepNeeded, bytes memory /* performData */){
+        returns (bool upkeepNeeded, bytes memory performData)
+    {
         upkeepNeeded = false;
-        uint256 lowestId= 0;
-        int256 sendId = 0;
+        uint256 lowestId = 0;
 
-        if(ActiveSubmissions.length > 0){
+        if (ActiveSubmissions.length > 0) {
+            uint256 lowestTimestamp = 0;
 
-        uint256 lowestTimestamp= 0;
-        
-        for (uint256 i=1; i < ActiveSubmissions.length; i++){
+            // Find the lowest expired submission
+            for (uint256 i = 1; i < ActiveSubmissions.length; i++) {
+                uint256 submissionId = ActiveSubmissions[i];
+                uint256 reviewPeriodExpired = CommunitySubmissions[submissionId].timestamp + CommunitySubmissions[submissionId].consensusTime;
 
-            uint256 reviewPeriodExpired = CommunitySubmissions[ActiveSubmissions[i]].timestamp + CommunitySubmissions[ActiveSubmissions[i]].consensusTime;
-            
-            // Ensure review period is expired and is the lowestin the list
-            if( reviewPeriodExpired <= block.timestamp && (reviewPeriodExpired<= lowestTimestamp || lowestTimestamp == 0)){
-                upkeepNeeded = true;
-                lowestId= ActiveSubmissions[i];
-                lowestTimestamp= reviewPeriodExpired;
-                
+                // Ensure review period is expired and is the lowest in the list
+                if (reviewPeriodExpired <= block.timestamp && (reviewPeriodExpired <= lowestTimestamp || lowestTimestamp == 0)) {
+                    upkeepNeeded = true;
+                    lowestId = submissionId;
+                    lowestTimestamp = reviewPeriodExpired;
+                }
             }
 
-        }
+            int256 resultId;
 
-        if(lowestId !=0) {
-            (uint256 numReviewsForAcceptance,uint256 credsNeededForReview,uint256 percentAcceptsNeeded) = CommunityConsensusContract.getCommunityReviewParams(CommunitySubmissions[lowestId].communityName);
-
-            uint256[] memory reviewList= submmisionReviews[lowestId];
-
-            // Check if there are enough reviews
-            if(reviewList.length < numReviewsForAcceptance) {
-
-                sendId= int256(lowestId) * -1;
- 
-            } else {
-
-                uint256 acceptedReviewsCount = 0;
-                uint256 totalCount=0;
-
-                // we set an upper bound as a blocker for spam reviews to clog the active review list with gas throttling
-                uint256 upperbound;
-                if (reviewList.length > maxReviews){
-                    upperbound = maxReviews;
-                }else{
-                    upperbound = reviewList.length;
-                }
-
-
-                for (uint256 i = 0; i < upperbound; i++) {
-
-                    (uint256 reviewConsesous, uint256 reviewCreds) = this.getReviewConsenous(reviewList[i]);
-                    // Only consider reviews from members with enough credentials
-                    if (reviewCreds >= credsNeededForReview) {
-                        totalCount++ ;
-                        if (reviewConsesous == 2) { // Assuming 2 is the code for "Accepted"
-                            acceptedReviewsCount++;
-                    }
-                }
-                }
-
-                // covering our divide by 0 (numReviewsForAcceptance=0 and no reviews) but also want to make sure we have more than enough substantive reviews
-                // use < instead of <= because if = and not 0  we should process it
-                if(totalCount == 0 || totalCount < numReviewsForAcceptance ){
-                    sendId = int256(lowestId) * -1;
-                } else{
-
-                uint256 percentAcceptedByCount = (acceptedReviewsCount * 100) / totalCount;
-                if (percentAcceptedByCount >= percentAcceptsNeeded) {
-                   sendId= int256(lowestId); // Accepted
-                } else {
-                
-                   sendId= int256(lowestId) * -1; // Rejected
-
-                }
-                }
-
+            if (lowestId != 0) {
+                (upkeepNeeded,resultId) = _checkSubmissionForUpkeep(lowestId);
+                performData = abi.encode(resultId);
             }
         }
+    }
 
-        }
-        return(upkeepNeeded, abi.encode(sendId));
+    // Automated performUpkeep function
+    /**
+     * @notice Performs the upkeep on a specific submission based on the result data from checkUpkeep.
+     * @param performData Encoded data containing the submission result ID (positive for accepted, negative for rejected).
+     */
+    function performUpkeep(bytes calldata performData) external ownerOrAutomation {
+        require(performData.length == 32, "Invalid performData length");
+        int256 resultId = abi.decode(performData, (int256));
+        _performSubmissionUpkeep(resultId);
+    }
 
+    // Manual upkeep function for processing a specific submission manually
+    /**
+     * @notice Manually processes upkeep for a specific submission to update its consensus status.
+     * @param submissionId The ID of the submission to manually process for upkeep.
+     */
+    function manualUpkeepPost(uint256 submissionId) external ownerOrAutomation {
+        require(submissionId != 0, "Invalid submission ID");
+        require(
+            CommunitySubmissions[submissionId].timestamp != 0 && 
+            ActiveSubmissionsIndexes[submissionId] != 0, 
+            "Submission does not exist or is not active"
+        );
+
+        // Use the same logic to check if the specific submission needs upkeep
+        (bool upkeepNeeded, int256 resultId) = _checkSubmissionForUpkeep(submissionId);
+
+        require(upkeepNeeded, "Upkeep not needed for this submission");
+
+        // Perform upkeep manually
+        _performSubmissionUpkeep(resultId);
     }
 
 
 
-    /*
-   * @notice Performs the upkeep of proposals.
-   * @dev Validates that  post review period has ended. If so loops through array of reviews (maxed to upper bound) to come up with a consensus of the articles status for the community
-   * @dev Consensous for articles can only be accepted or rejected. Acceptance requires the number of creds for aceptance > all others combined. as well the nuber of accepted reviews as subejct specifed percent of acceptance
-   * @param performData Data from the checkUpKeep function Post Id as a signed integer (postive = accepted, negative = failed) trnasfromed as bytes
-    */
-
-    // This function must be controlled by a modifier that only allows the chainlink oracle network or the owner to call this function
-    // We do our computaion off chain as it could be very expensive to loop through all reveiws 
-    //With that comes some level of trust the caller of this function to provide truthful consensus for a post id that is active 
-
-    function performUpkeep(bytes calldata _performData ) external ownerOrAutomation {
-
-    // we want to make sure we are getting something that can be an int256
-    if (_performData.length == 32) {
-        
-        int256 ssvalue = abi.decode(_performData, (int256));
-        bool Accepted;
-        uint256 ssid;
-
-
-        if(ssvalue > 0){
-            Accepted = true;
-            ssid= uint256(ssvalue);
-
-        }else {
-            Accepted = false;
-            ssid= uint256(-ssvalue);
-        }
-        
-
-        // ensure post Id is not 0, review time for that post has passed, and an extra check to make sure the submission id  is in use and is actively being reviewed
-        if (ssid != 0 && block.timestamp >= CommunitySubmissions[ssid].timestamp +  CommunitySubmissions[ssid].consensusTime && CommunitySubmissions[ssid].timestamp != 0 && ActiveSubmissionsIndexes[ssid] != 0 ) {
-            
-            if (Accepted == true) {
-                    CommunitySubmissions[ssid].consensusType = defaultConsenousTypes[1]; // Accepted
-                } else {
-                    CommunitySubmissions[ssid].consensusType = defaultConsenousTypes[2]; // Rejected
-                }
-
-            emit ConsensusUpdated(ssid, CommunitySubmissionToPost[ssid], CommunitySubmissions[ssid].consensusType);
-
-
-
-            // Swap and pop
-
-            // set our target index to the index of the submission
-            uint256 index = ActiveSubmissionsIndexes[ssid];
-            // check if index is last in array
-            if (index != ActiveSubmissions.length -1) {
-                // if it is not we let the last item take its spot
-                ActiveSubmissions[index] = ActiveSubmissions[ActiveSubmissions.length - 1];
-            
-                // update the index in our mapping 
-                ActiveSubmissionsIndexes[ActiveSubmissions[ActiveSubmissions.length - 1]]= index;
-                emit ActiveSubmissionsIndexUpdated(ActiveSubmissions[index], index);
-            }
-            
-            ActiveSubmissionsIndexes[ssid] = 0;
-            ActiveSubmissions.pop();
-
-        }
-    }
-
-    }
 
 
             
@@ -501,10 +524,12 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
 
     }
 
-    function setFeeAddress(address payable _feeAddress) external ownerOnly {
-        feeAddress= _feeAddress;
+
+    function setFundContract(address _contract) external ownerOnly {
+       FundContract= tgetherFundInterface(_contract);
 
     }
+
 
 
 

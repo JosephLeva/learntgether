@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.0] - 2024-09-11
+ 
+### Added
+- Fund Contract: The Fund Contract has replaced fee addresses
+    - Fund contracts use sushi swap to swap eth for link and directly fund upkeeps
+### Changed
+- Changed Communities, Community Conesnsus, and Post Consensus to use fund contract instead of fee addresses
+- Added disclaimers to fee collecting functions explaining that funding goes to a pool subject to price volatillity 
+- Added manual way to run post consensus (requires looping though reviews) in case price volatility causes issues with upkeep
+
 ## [0.1.1] - 2024-08-25
  
 ### Added

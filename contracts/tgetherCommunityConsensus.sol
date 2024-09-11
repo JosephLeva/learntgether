@@ -11,6 +11,10 @@ interface tgetherCommuunitiesInterfact{
     function getFee() external view returns(uint256);
 }
 
+interface tgetherFundInterface{
+        function fundUpkeep(address _contractAddress) external payable returns (bool);
+    }
+
 
 contract tgetherCommunityConsensus is ILogAutomation{
     // CC= ComunityConsensus
@@ -46,18 +50,18 @@ contract tgetherCommunityConsensus is ILogAutomation{
     uint256 public maxConsensusTime;
     uint256 public communityFee;
     uint256 public totalFee;
-    address payable public feeAddress;
+    tgetherFundInterface public FundContract;
 
 
     tgetherCommuunitiesInterfact public CommunityContract;
     address thisAddress = address(this);
 
     uint256 public upkeepId;
-    constructor(uint256 _feePrice, address _communityContractAddress, uint256 _communityFee, address payable _feeAddress) {
+    constructor(uint256 _feePrice, address _communityContractAddress, uint256 _communityFee, address _fundContract) {
         owner = msg.sender;
 
         CommunityContract= tgetherCommuunitiesInterfact(_communityContractAddress);
-        feeAddress = _feeAddress;
+        FundContract = tgetherFundInterface(_fundContract);
 
         fee = _feePrice;
         communityFee = _communityFee;
@@ -141,6 +145,22 @@ contract tgetherCommunityConsensus is ILogAutomation{
     */
 
     // Fee is sent to this contract and then sent to the community contract, also collected by the owner of this contract
+
+
+    /**
+    * DISCLAIMER:
+    * By signing and submitting this transaction, you acknowledge that you are contributing funds to a shared pool 
+    * rather than directly funding your individual upkeep execution. This pooling mechanism is designed to optimize 
+    * resource allocation and minimize transaction costs.
+    *
+    * Please be aware that price volatility may affect the availability of funds required to process your upkeep. 
+    * In such cases, your upkeep may not be automatically executed. However, you retain the option to manually 
+    * execute your upkeep at any time by calling the performUpkeep function.
+    *
+    * Ensure you understand the risks associated with price fluctuations and the potential impact on the automatic 
+    * processing of your upkeep.
+    */
+
     function CreateCCProposal(
         string memory _communityName,   
         uint256 _numReviewsForAcceptance,
@@ -169,13 +189,14 @@ contract tgetherCommunityConsensus is ILogAutomation{
         ccPP.consensusTypes = _consensusTypes;
         emit CCProposalCreated(proposalId, msg.sender, _numReviewsForAcceptance, _credsNeededForReview, _percentAcceptsNeeded, _consensusTime, _consensusTypes);
         
+        bool _isFunded = FundContract.fundUpkeep{value: msg.value - communityFee}(address(this));
+        if (_isFunded) {
+            CommunityConsensusProposals[proposalId] = ccPP;
+            ConsensusProposalArray[_communityName].push(proposalId);
+        } else {
+            revert();
+        }
 
-        (bool _sent, ) = feeAddress.call{value: msg.value - communityFee}("");
-        require(_sent, "Failed to send Ether");
-        CommunityConsensusProposals[proposalId] = ccPP;
-        ConsensusProposalArray[_communityName].push(proposalId);
-
-        
         return proposalId;
     }
 
@@ -307,11 +328,10 @@ contract tgetherCommunityConsensus is ILogAutomation{
         communityFee = _comfee;
         totalFee = fee + _comfee;
     }
+    function setFundContract(address _contract) external onlyOwner {
+       FundContract= tgetherFundInterface(_contract);
 
-    function setFeeAddress(address payable _feeAddress) external onlyOwner {
-        feeAddress = _feeAddress;
     }
-
 
 
 

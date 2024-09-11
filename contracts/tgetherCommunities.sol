@@ -2,11 +2,15 @@
 pragma solidity ^0.8.0;
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 
-
 interface tgetherMembersInterface{
     function getMemberCreds(address _member, string memory _community) external view returns (int256 creds); 
     function getIsMember(address _member, string memory _community) external view returns (bool);
     }
+
+interface tgetherFundInterface{
+        function fundUpkeep(address _contractAddress) external payable returns (bool);
+    }
+
 
 
 contract tgetherCommunities is AutomationCompatibleInterface{
@@ -71,15 +75,15 @@ contract tgetherCommunities is AutomationCompatibleInterface{
 
     address private owner;
     uint256 public fee;
-    address payable feeAddress;
 
     tgetherMembersInterface public MemberContract;
+    tgetherFundInterface public FundContract;
 
     uint256 public upkeepId;
-    constructor(uint256 _feePrice, address payable _feeAddress) {
+    constructor(uint256 _feePrice, address _fundContract) {
         owner = msg.sender;
 
-        feeAddress = _feeAddress;
+        FundContract = tgetherFundInterface(_fundContract);
 
         fee = _feePrice;
 
@@ -223,6 +227,19 @@ contract tgetherCommunities is AutomationCompatibleInterface{
     * @return proposalId ID of the proposal.
     */
 
+    /**
+    * DISCLAIMER:
+    * By signing and submitting this transaction, you acknowledge that you are contributing funds to a shared pool 
+    * rather than directly funding your individual upkeep execution. This pooling mechanism is designed to optimize 
+    * resource allocation and minimize transaction costs.
+    *
+    * Please be aware that price volatility may affect the availability of funds required to process your upkeep. 
+    * In such cases, your upkeep may not be automatically executed. However, you retain the option to manually 
+    * execute your upkeep at any time by calling the performUpkeep function.
+    *
+    * Ensure you understand the risks associated with price fluctuations and the potential impact on the automatic 
+    * processing of your upkeep.
+    */
     function CommunityProposal(
         string memory _communityName,
         uint256 _minCredsToProposeVote,
@@ -256,12 +273,13 @@ contract tgetherCommunities is AutomationCompatibleInterface{
         emit CommunityProposalParams(_communityName, proposalCounter, _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _credsAccessAddress, _proposalTime, _proposalDelay, _isInviteOnly);
         
         // Send Fee to appropriate Address
-        (bool _sent, ) = feeAddress.call{value: msg.value}("");
-        require(_sent, "Failed to send Ether");
-
-        hasOpenProposal[msg.sender]= true;
-        ActiveProposals.push(proposalCounter);
-        
+        bool _isFunded = FundContract.fundUpkeep{value: msg.value}(address(this));
+        if (_isFunded) {
+            hasOpenProposal[msg.sender] = true;
+            ActiveProposals.push(proposalCounter);
+        }else {
+            revert();
+        }
         // Increment the proposalCounter
         proposalCounter++;  
         return proposalCounter-1;
@@ -278,6 +296,21 @@ contract tgetherCommunities is AutomationCompatibleInterface{
 
      // We use tx.orgin here instead of msg.sender because this can be called by a contract and we want to track the user who called the contract
 
+
+    /**
+    * DISCLAIMER:
+    * By signing and submitting this transaction, you acknowledge that you are contributing funds to a shared pool 
+    * rather than directly funding your individual upkeep execution. This pooling mechanism is designed to optimize 
+    * resource allocation and minimize transaction costs.
+    *
+    * Please be aware that price volatility may affect the availability of funds required to process your upkeep. 
+    * In such cases, your upkeep may not be automatically executed. However, you retain the option to manually 
+    * execute your upkeep at any time by calling the performUpkeep function.
+    *
+    * Ensure you understand the risks associated with price fluctuations and the potential impact on the automatic 
+    * processing of your upkeep.
+    */
+
     function CustomProposal(
         string memory _communityName,
         address _contractAddress
@@ -290,12 +323,13 @@ contract tgetherCommunities is AutomationCompatibleInterface{
 
         emit CustomProposalCreated(_contractAddress, proposalCounter, tx.origin);
         
-        // Send Fee to appropriate Address
-        (bool _sent, ) = feeAddress.call{value: msg.value}("");
-        require(_sent, "Failed to send Ether");
-
-        hasOpenProposal[tx.origin]= true;
-        ActiveProposals.push(proposalCounter);
+        bool _isFunded = FundContract.fundUpkeep{value: msg.value}(address(this));
+        if (_isFunded) {
+            hasOpenProposal[msg.sender] = true;
+            ActiveProposals.push(proposalCounter);
+        }else {
+            revert();
+        }
         
         // Increment the proposalCounter
         proposalCounter++;  
@@ -565,8 +599,8 @@ contract tgetherCommunities is AutomationCompatibleInterface{
 
     }
 
-    function setFeeAddress(address payable _feeAddress) external onlyOwner {
-       feeAddress= _feeAddress;
+    function setFundContract(address _contract) external onlyOwner {
+       FundContract= tgetherFundInterface(_contract);
 
     }
 

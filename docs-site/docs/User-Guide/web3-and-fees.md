@@ -23,6 +23,11 @@ To maintain a decentralized and trustless platform, certain actions on tgether r
 
 - **Creating a Post Consensus:** Similar to proposals, creating a post consensus requires ongoing monitoring and automated execution. The fee for this action supports the automated systems that ensure decisions are processed accurately and transparently.
 
+## How are Fees collected?
+- All fees are collected by a fund contract, which immediatly swaps native token for LINK, to be used by Chainlink Automation Executions. All fees are stored in the respective automation jobs for Communities, Community Conesnsus, and Post Conesnsus contracts. No fees for these functions are held by owners of the contracts.
+
+**IMPROTANT** These Fees are collected and shared in a pool, and not tied directly to upkeeps. Fees are nonrefundable. Please be aware that price volatility may affect the availability of funds required to process your upkeep. In such cases, your upkeep may not be automatically executed. However, you retain the option to manually process your proposal/post consnsus. This is a limitiation of Automation Execution, which can not tie direct fees to transactions.
+
 ### Chainlink Automation and Why It’s Necessary
 
 These fees are linked to the use of **Chainlink Automation**, which powers the automated processes on tgether. Chainlink Automation allows us to trigger actions and events in a decentralized way, without relying on centralized servers or administrators. By using Chainlink, we can maintain a completely decentralized platform where every process—from voting to finalizing decisions—happens trustlessly and transparently.
