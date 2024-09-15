@@ -92,7 +92,7 @@ const config = {
           },
           {
             label: 'Whitepaper',
-            href: 'https://tgetherpublic.s3.amazonaws.com/tgether_whitepaper.pdf'
+            href: 'https://whitepaper.tgether.io'
           },
           {
             label: 'GitHub',
