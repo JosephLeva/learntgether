@@ -2,7 +2,7 @@
 sidebar_position: 6
 ---
 
-# Learn Together Contract Addresses on Arbitrum One
+# Contract Addresses on Arbitrum One
 
 The following are the current production contract addresses for the Learn Together project deployed on the Arbitrum One network:
 
