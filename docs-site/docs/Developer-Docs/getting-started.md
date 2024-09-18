@@ -55,6 +55,7 @@ Ready to dive into the details? Check out the following sections to get started:
 - [Custom Proposals And Log Automation](./Custom-Proposals-and-Log-Automation)
 - [Membership and Creds](./membership-and-creds.md)
 - [Fee Collection](./fee-collection.md)
+- [Contracts](./contract-addresses.md)
 
 ## Contributing
 
