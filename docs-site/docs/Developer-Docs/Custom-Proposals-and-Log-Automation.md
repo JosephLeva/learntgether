@@ -88,6 +88,37 @@ function checkLog(
 event CustomProposalResult(address indexed contractAddress, uint256 indexed proposalId, bool indexed passed);
 ```
 
+The ABI for this event
+```json
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": true,
+      "internalType": "address",
+      "name": "contractAddress",
+      "type": "address"
+    },
+    {
+      "indexed": true,
+      "internalType": "uint256",
+      "name": "proposalId",
+      "type": "uint256"
+    },
+    {
+      "indexed": true,
+      "internalType": "bool",
+      "name": "passed",
+      "type": "bool"
+    }
+  ],
+  "name": "CustomProposalResult",
+  "type": "event"
+}
+
+
+```
+
 We don’t check whether the proposal has passed or failed during this stage because we need to process it either way—our focus is only on whether it needs processing.
 
 ### Processing the Proposal in Perform Upkeep

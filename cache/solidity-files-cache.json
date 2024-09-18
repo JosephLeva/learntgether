@@ -1935,8 +1935,8 @@
       ]
     },
     "/Users/joeleva/dev2/gitl/learntgether/contracts/tgetherFund.sol": {
-      "lastModificationDate": 1725936420776,
-      "contentHash": "a137040a730e04422d170c03d9bfdcfd",
+      "lastModificationDate": 1725952956724,
+      "contentHash": "75f01864c35c52ee38b6c5db61e7fdb1",
       "sourceName": "contracts/tgetherFund.sol",
       "solcConfig": {
         "version": "0.8.20",
