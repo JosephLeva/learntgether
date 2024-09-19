@@ -70,9 +70,13 @@ const config = {
 
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
+    
     ({
       // Replace with your project's social card
       image: 'img/tg_round.png',
+      metadata: [
+        { name: 'description', content: 'tgether.io is a decentralized consensus platform that enables peer review of web content to tackle AI-generated content and media centralization.' },
+      ],
       navbar: {
         title: 'tgether.io',
         logo: {
