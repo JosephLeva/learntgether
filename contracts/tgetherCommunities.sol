@@ -1,19 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
+import "hardhat/console.sol";
 
 interface tgetherMembersInterface{
     function getMemberCreds(address _member, string memory _community) external view returns (int256 creds); 
     function getIsMember(address _member, string memory _community) external view returns (bool);
     }
 
-interface tgetherFundInterface{
-        function fundUpkeep(address _contractAddress) external payable returns (bool);
-    }
+interface laneRegistryInterface{
+    function appendToLane(uint256 proposalId) external payable returns (uint256);
+    function getLaneContractAddress(uint256 laneId) external view returns (address);
+}
+interface LaneContractInterface{
+    function removeProposal(uint256 proposalId) external;
+}
 
 
-
-contract tgetherCommunities is AutomationCompatibleInterface{
+contract tgetherCommunities{
 
     struct Community  {
         address creator;
@@ -53,7 +57,7 @@ contract tgetherCommunities is AutomationCompatibleInterface{
         string communityName;
         uint256 timestamp;
         uint256 propType; // 1 for community 2 for Custom Proposals
-        uint256 activeProposalsIndex;
+        uint256 laneId;
         uint256 approveVotes;
         uint256 denyVotes;
         uint256 approveCreds;
@@ -69,7 +73,6 @@ contract tgetherCommunities is AutomationCompatibleInterface{
     uint256 proposalCounter;
     mapping(uint256=> Proposal) public proposals;
 
-    uint256[] ActiveProposals;
     mapping(string => uint256[]) public porposalsByCommunity;
     mapping(address=>bool) public hasOpenProposal;
 
@@ -77,13 +80,11 @@ contract tgetherCommunities is AutomationCompatibleInterface{
     uint256 public fee;
 
     tgetherMembersInterface public MemberContract;
-    tgetherFundInterface public FundContract;
+    laneRegistryInterface public laneRegistryContract;
 
     uint256 public upkeepId;
-    constructor(uint256 _feePrice, address _fundContract) {
+    constructor(uint256 _feePrice) {
         owner = msg.sender;
-
-        FundContract = tgetherFundInterface(_fundContract);
 
         fee = _feePrice;
 
@@ -91,8 +92,6 @@ contract tgetherCommunities is AutomationCompatibleInterface{
         maxProposalTime = 7890000;
 
         proposalCounter = 1;
-        // ensure Nothing can get in the 0 array spot
-        ActiveProposals.push(0);
     }
 
 
@@ -127,7 +126,6 @@ contract tgetherCommunities is AutomationCompatibleInterface{
     event ProposalCreated(uint256 indexed proposalId, address indexed proposer, string indexed communityName, uint256 timestamp, uint256 propType);
     event CustomProposalCreated(address indexed contractAddress, uint256 indexed proposalId, address indexed proposer);
     event Voted(uint256 indexed proposalId, address indexed voter, bool indexed voteChoice, uint256 credsToCount);
-    event IndexChange(uint256 proposalId, uint256 activeProposalsIndex);
     event ProposalResult(uint256 indexed proposalId, bool indexed passed);
     event CustomProposalResult(address indexed contractAddress, uint256 indexed proposalId, bool indexed passed);
 
@@ -200,7 +198,6 @@ contract tgetherCommunities is AutomationCompatibleInterface{
         prop.proposer = tx.origin;
         prop.communityName= _communityName;
         prop.timestamp= block.timestamp;
-        prop.activeProposalsIndex= ActiveProposals.length; //do not need a -1 because we have not added to array yet
         prop.propType= _propType;
         prop.isActive= true;
 
@@ -214,18 +211,7 @@ contract tgetherCommunities is AutomationCompatibleInterface{
 
 
 
-    /*
-    * @notice Proposes changes to a communities's parameters. (Type 2)
-    * @dev Ensures the communities exists and the proposer meets the requirements. Must Approve LinkFee to Contract before calling.
-    * @param _communityName Name of the communities to be updated.
-    * @param _minCredsToProposeVote Minimum creds required to propose a vote.
-    * @param _minCredsToVote Minimum creds required to vote.
-    * @param _maxCredsCountedForVote Maximum creds that can be counted for a vote.
-    * @param _minProposalVotes Minimum proposal votes required.
-    * @param _proposalTime Amount of time for proposal to be active.
-    * @param _proposalDelay Amount of time for delay before proposal can be processed.
-    * @return proposalId ID of the proposal.
-    */
+
 
     /**
     * DISCLAIMER:
@@ -251,6 +237,7 @@ contract tgetherCommunities is AutomationCompatibleInterface{
         uint256 _proposalDelay,
         bool _isInviteOnly
      ) external payable proposalRequirements(_communityName) returns(uint256){
+
         // Create a new proposal using the proposalCounter as an ID
         ProposalProp storage pProp = CommunityProposals[proposalCounter];
 
@@ -258,6 +245,7 @@ contract tgetherCommunities is AutomationCompatibleInterface{
         if (_proposalTime > maxProposalTime){
             _proposalTime = maxProposalTime;
         }
+
         // create our generic proposal
         createProposal(_communityName, 1);
 
@@ -271,15 +259,10 @@ contract tgetherCommunities is AutomationCompatibleInterface{
         pProp.isInviteOnly = _isInviteOnly;
 
         emit CommunityProposalParams(_communityName, proposalCounter, _minCredsToProposeVote, _minCredsToVote, _maxCredsCountedForVote, _minProposalVotes, _credsAccessAddress, _proposalTime, _proposalDelay, _isInviteOnly);
-        
-        // Send Fee to appropriate Address
-        bool _isFunded = FundContract.fundUpkeep{value: msg.value}(address(this));
-        if (_isFunded) {
-            hasOpenProposal[msg.sender] = true;
-            ActiveProposals.push(proposalCounter);
-        }else {
-            revert();
-        }
+
+        uint256 laneId = laneRegistryContract.appendToLane{value: msg.value}(proposalCounter);
+        proposals[proposalCounter].laneId = laneId;
+    
         // Increment the proposalCounter
         proposalCounter++;  
         return proposalCounter-1;
@@ -323,20 +306,16 @@ contract tgetherCommunities is AutomationCompatibleInterface{
 
         emit CustomProposalCreated(_contractAddress, proposalCounter, tx.origin);
         
-        bool _isFunded = FundContract.fundUpkeep{value: msg.value}(address(this));
-        if (_isFunded) {
-            hasOpenProposal[msg.sender] = true;
-            ActiveProposals.push(proposalCounter);
-        }else {
-            revert();
-        }
-        
+        uint256 laneId = laneRegistryContract.appendToLane{value: msg.value}(proposalCounter);
+        proposals[proposalCounter].laneId = laneId;
+    
+
+
         // Increment the proposalCounter
         proposalCounter++;  
         return proposalCounter-1;
 
     }
-
 
 
 
@@ -396,48 +375,6 @@ contract tgetherCommunities is AutomationCompatibleInterface{
 
 
     /*
-        * @notice Checks if upkeep is needed for proposals.
-        * @dev Loops thorugh the active proposals array to find Propsals where voting is ceased. Aims to grab the lowest voteEnds timestamp as the next to be processed.
-        * @param check data (unused in this function but might be needed for interface compatibility).
-        * @return upkeepNeeded Boolean indicating if upkeep is needed.
-        * @return performData bytes object cast from uint256 id for the lowest timestamp proposal where vote period has ended
-    */
-
-    function checkUpkeep(
-        bytes calldata /* checkData */
-    )
-        external
-        view
-        override
-        returns (bool upkeepNeeded, bytes memory /* performData */){
-
-        upkeepNeeded = false;
-        uint256 lowestId= 0;
-
-        if(ActiveProposals.length > 0){
-
-        uint256 lowestVoteEnd= 0;
-
-        for (uint256 i=1; i < ActiveProposals.length; i++){
-             
-            // Time of proposal + Amount of time for delay + amoubnt of time proposal active
-            uint256 voteEnd= proposals[ActiveProposals[i]].timestamp + communities[proposals[ActiveProposals[i]].communityName].proposalDelay + communities[proposals[ActiveProposals[i]].communityName].proposalTime;
-
-            if( voteEnd <= block.timestamp && (voteEnd <= lowestVoteEnd || lowestVoteEnd == 0)){
-                upkeepNeeded = true;
-                lowestId= ActiveProposals[i];
-                lowestVoteEnd= voteEnd;
-
-            }
-        }
-
-        }
-        return(upkeepNeeded, abi.encode(lowestId));
-
-
-    }
-
-    /*
    * @notice Performs the upkeep of proposals.
    * @dev Validates that a proposal vote period has ended. If it is we check if the passed. If it does we set our communities values to the proposed ones. Then we set the proposal to inactive and swap-pop the ActiveProposals array
    * @param performData Data from the checkUpKeep function Proposal Id where vote period has ending
@@ -494,29 +431,9 @@ contract tgetherCommunities is AutomationCompatibleInterface{
             // Set proposal to inactive
             proposals[proposalId].isActive = false;
 
-
-
-        // Swap and pop
-
-        // set our target index to the proposalId for swap
-        uint256 index = proposals[proposalId].activeProposalsIndex;
-
-        // check if index is last in array
-        if (index != ActiveProposals.length -1) {
-            // if it is not we let the last item take its spot
-            ActiveProposals[index] = ActiveProposals[ActiveProposals.length - 1];
-        
-            // update the index in our mapping 
-            proposals[ActiveProposals[index]].activeProposalsIndex= index;
-            emit IndexChange(ActiveProposals[index], index);
         }
 
-        proposals[proposalId].activeProposalsIndex = 0;
-        ActiveProposals.pop();
-
-        }
     }
-
     /*
         * @notice Allows a member to cancel a proposal. 
         * @dev Ensures the proposal exists and the member is the proposer.
@@ -527,29 +444,8 @@ contract tgetherCommunities is AutomationCompatibleInterface{
         require(proposals[_propId].proposer == msg.sender, "User did not propose this");
         require(proposals[_propId].isActive == true, "This proposal is not active");
 
-       
-        // Swap and pop
-
-        // set our target index to the proposalId for swap
-        uint256 index = proposals[_propId].activeProposalsIndex;
-
-        // Avoid the for loop if somehow the list is empty (we dont want to do anything anyway)
-        require(ActiveProposals.length > 1, "There are no active Proposals");
-
-        // check if index is last in array
-        if (index != ActiveProposals.length -1) {
-            // if it is not we let the last item take its spot
-            ActiveProposals[index] = ActiveProposals[ActiveProposals.length - 1];
-        
-            // update the index in our mapping 
-            proposals[ActiveProposals[index]].activeProposalsIndex= index;
-            emit IndexChange(ActiveProposals[index], index);
-        }
-        proposals[_propId].isActive= false;
-        proposals[_propId].activeProposalsIndex = 0;
-        ActiveProposals.pop();
-        emit ProposalResult(_propId, false);
-
+        address _address = laneRegistryContract.getLaneContractAddress(proposals[_propId].laneId);
+        LaneContractInterface(_address).removeProposal(_propId);
     }
 
 
@@ -599,8 +495,8 @@ contract tgetherCommunities is AutomationCompatibleInterface{
 
     }
 
-    function setFundContract(address _contract) external onlyOwner {
-       FundContract= tgetherFundInterface(_contract);
+    function setLaneRegistryContract(address _contractAddress) external onlyOwner {
+        laneRegistryContract= laneRegistryInterface(_contractAddress);
 
     }
 
@@ -631,12 +527,12 @@ contract tgetherCommunities is AutomationCompatibleInterface{
         return ( proposals[_proposalId].isActive, proposals[_proposalId].passed);
     }
     
-    function getActiveProposalsLength()external view returns(uint256){
-        return(ActiveProposals.length);
+    function getLaneId(uint256 _propId)external view returns(uint256){
+        return(proposals[_propId].laneId);
     }
 
-    function getActiveProposalIndex(uint256 _propId)external view returns(uint256){
-        return(proposals[_propId].activeProposalsIndex);
+    function getVoteEnd(uint256 _propId) external view returns(uint256){
+        return(proposals[_propId].timestamp + communities[proposals[_propId].communityName].proposalDelay + communities[proposals[_propId].communityName].proposalTime);
     }
 
     function getCommunityOwner(string memory _communityName) external view returns (address){
@@ -675,23 +571,6 @@ contract tgetherCommunities is AutomationCompatibleInterface{
         }
         return(ids, porposalsByCommunity[_communityName].length / _numIdsreturned);
     }
-
-    function getPaginatedActiveProposals( uint256 _numIdsreturned, uint256 _pageNumber ) external view returns(uint256[] memory, uint256 numPages){
-        uint256[] memory ids = new uint256[](_numIdsreturned);
-        uint256 counter= 0;
-        uint256 start= _pageNumber * _numIdsreturned;
-        uint256 end= start + _numIdsreturned;
-        if (end > ActiveProposals.length){
-            end= ActiveProposals.length;
-        }
-        for (uint256 i= start; i < end; i++){
-            ids[counter]= ActiveProposals[i];
-            counter++;
-        }
-        return(ids, ActiveProposals.length / _numIdsreturned);
-    }
-
-
 
 
 }

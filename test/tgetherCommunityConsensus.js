@@ -22,7 +22,7 @@ const memberAccessContract =zeroAddress
 const feeAmount = ethers.utils.parseEther("1"); // Replace "1" with the actual fee amount
 const ccfeeAmount = ethers.utils.parseEther("0.5"); // Replace "1" with the actual fee amount
 
-describe("tgether Reviewers Contract", function() {
+describe("tgether Community Consensus Contract", function() {
   let tgr
   let tgs
   let owner;
@@ -46,9 +46,21 @@ describe("tgether Reviewers Contract", function() {
     await tgf.deployed();
 
     const tgetherCom = await ethers.getContractFactory("tgetherCommunities");
-    tgc = await tgetherCom.deploy(mockFeePrice, tgf.address);
+    tgc = await tgetherCom.deploy(mockFeePrice);
     await tgc.deployed();
 
+      // Deploy LaneRegistry with tgetherCommunities as the intakeContract (Step 3)
+      const LaneRegistry = await ethers.getContractFactory("LaneRegistry");
+      laneRegistry = await LaneRegistry.deploy(tgc.address);
+      await laneRegistry.deployed();
+  
+      // Deploy CommunitiesLane with required addresses (Step 4)
+      const Lane = await ethers.getContractFactory("CommunitiesLane");
+      lane1 = await Lane.deploy(tgf.address, tgc.address, laneRegistry.address);
+      await lane1.deployed();
+  
+  
+      await tgc.connect(owner).setLaneRegistryContract(laneRegistry.address);
 
     const tgetherComCon = await ethers.getContractFactory("tgetherCommunityConsensus");
     tgcc = await tgetherComCon.deploy(ccfeeAmount, tgc.address, mockFeePrice, tgf.address );

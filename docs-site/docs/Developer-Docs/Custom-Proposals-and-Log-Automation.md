@@ -1,9 +1,10 @@
 ---
-sidebar_position: 4
+sidebar_position: 5
 ---
 
 # Custom Proposals
 
+tgether uses custom proposals to expand a communities use case beyond just peer review. Allowing communities to vote on anything they need consensus on.
 In tgether, **Community Consensus** is actually an example of a custom proposal system. You can set new parameters and implement unique logic using a similar approach. By following this guide, you’ll learn how to create and manage custom proposals using tgether’s interfaces and Chainlink Automation.
 
 **Note** Always audit your own contracts before deploying them to mainnet. Never just assume any solidity code will work how you expect.

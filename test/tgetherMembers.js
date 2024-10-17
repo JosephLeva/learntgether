@@ -14,7 +14,7 @@ const zeroAddress = "0x0000000000000000000000000000000000000000";
 const memberAccessContract =zeroAddress
 
 
-describe("tgether Reviewers Contract", function() {
+describe("tgether Members Contract", function() {
   let tgr
   let tgs
   let owner;
@@ -34,7 +34,7 @@ describe("tgether Reviewers Contract", function() {
     await tgm.deployed();
 
     const tgetherCom = await ethers.getContractFactory("tgetherCommunities");
-    tgc = await tgetherCom.deploy(mockFeePrice, owner.address);
+    tgc = await tgetherCom.deploy(mockFeePrice);
     await tgc.deployed();
     
     

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.1.0] - 2024-08-25
+ 
+### Added
+- Inventives and Bounties 
+    - Incentives: new set of parameters that defines how bounties are disributed on post consensus
+        - Can split bounty equally amongst reviewers or only among consensus aligned and have the option to collect a % fee for community
+    - Bounties: anyone can submit a bounty on a post consensus submission - bounties are combined and split amongst community reviewers
+- Governance as a Service
+    - Introduced Paramter Groups Registry - users can now register their Custom proposal contracts
+    - Communities can now clearly see Parameters Groups they are enrolled in. ALlowing them to vote on Anything without worrying about governance
+### Changed
+- Multi Lane Delayed Priority Queues
+    - Replaced Active arrays in Post Consensus and Communites contract with multi Lane queues
+    - Lane Registry and Lane Contract allows tgether to scale to 1000's of proposals without effecting app performance just by adding lanes
+- Post Consensus Types Switched from string and int to enum
+### Fixed 
+- Post Consensus counting after consensus reviews
+
+
 ## [1.0.0] - 2024-09-11
  
 ### Added

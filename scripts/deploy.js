@@ -1,32 +1,134 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
+require("dotenv").config();
 const hre = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  const [deployer] = await hre.ethers.getSigners();
+  console.log("Deploying contracts with the account:", deployer.address);
 
-  const lockedAmount = hre.ethers.utils.parseEther("0.001");
+  // Set the fee dynamically from environment variables, fallback to 0 for testnet if not defined
+  const FEE = 100000000000000;
 
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  // 1. Deploy Fund Contract
+  const Fund = await hre.ethers.getContractFactory("tgetherFundTest");
+  const fund = await Fund.deploy();
+  await fund.deployed();
+  console.log("Fund contract deployed to:", fund.address);
 
-  await lock.deployed();
+  // 2. Deploy Communities Contract with the fee parameter
+  const Communities = await hre.ethers.getContractFactory("tgetherCommunities");
+  const communities = await Communities.deploy(FEE);
+  await communities.deployed();
+  console.log("Communities contract deployed to:", communities.address);
 
-  console.log(
-    `Lock with ${ethers.utils.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
-  );
+  // 3. Deploy Members Contract
+  const Members = await hre.ethers.getContractFactory("tgetherMembers");
+  const members = await Members.deploy();
+  await members.deployed();
+  console.log("Members contract deployed to:", members.address);
+
+  // 4. Call setMembersContract on the Communities contract
+  await communities.settgetherMembersContract(members.address);
+  console.log("Communities contract updated with Members contract address.");
+
+  // 5. Call setCommunitiesContract on the Members contract
+  await members.settgetherCommunities(communities.address);
+  console.log("Members contract updated with Communities contract address.");
+
+  // 6. Deploy Lane Registry Contract
+  const LaneRegistry = await hre.ethers.getContractFactory("LaneRegistry");
+  const laneRegistry = await LaneRegistry.deploy(communities.address);
+  await laneRegistry.deployed();
+  console.log("Lane Registry contract deployed to:", laneRegistry.address);
+
+  // 7. Call setRegistry on the Communities contract
+  await communities.setLaneRegistryContract(laneRegistry.address);
+  console.log("Communities contract updated with Lane Registry contract address.");
+
+  // 8. Deploy Lane Contract
+  const Lane = await hre.ethers.getContractFactory("CommunitiesLane");
+  const lane = await Lane.deploy(fund.address, communities.address, laneRegistry.address);
+  await lane.deployed();
+  console.log("Lane contract deployed to:", lane.address);
+
+  // 9. Deploy Community Consensus Contract
+  const CommunityConsensus = await hre.ethers.getContractFactory("tgetherCommunityConsensus");
+  const communityConsensus = await CommunityConsensus.deploy(FEE, communities.address, FEE, fund.address);
+  await communityConsensus.deployed();
+  console.log("Community Consensus contract deployed to:", communityConsensus.address);
+
+  // 10. Deploy Posts Contract
+  const Posts = await hre.ethers.getContractFactory("tgetherPosts");
+  const posts = await Posts.deploy();
+  await posts.deployed();
+  console.log("Posts contract deployed to:", posts.address);
+
+  // 11. Deploy Posts Consensus Contract
+  const PostsConsensus = await hre.ethers.getContractFactory("tgetherPostConsensus");
+  const postsConsensus = await PostsConsensus.deploy(communityConsensus.address, members.address, posts.address, FEE);
+  await postsConsensus.deployed();
+  console.log("Posts Consensus contract deployed to:", postsConsensus.address);
+
+  // 12. Deploy Another Instance of Registry Contract for Post Consensus
+  const PostConsensusRegistry = await hre.ethers.getContractFactory("LaneRegistry");
+  const postConsensusRegistry = await PostConsensusRegistry.deploy(postsConsensus.address);
+  await postConsensusRegistry.deployed();
+  console.log("Post Consensus Registry deployed to:", postConsensusRegistry.address);
+
+  // 13. Call setLaneRegistry on the Posts Consensus Contract
+  await postsConsensus.setLaneRegistry(postConsensusRegistry.address);
+  console.log("Posts Consensus Lane Registry set.");
+
+  // 14. Deploy Post Consensus Lane Contract
+  const PostConsensusLane = await hre.ethers.getContractFactory("PostConsensusLane");
+  const postConsensusLane = await PostConsensusLane.deploy(fund.address, postsConsensus.address, postConsensusRegistry.address);
+  await postConsensusLane.deployed();
+  console.log("Post Consensus Lane contract deployed to:", postConsensusLane.address);
+
+  // 15. Deploy Tgether Incentives Contract
+  const Incentives = await hre.ethers.getContractFactory("tgetherIncentives");
+  const incentives = await Incentives.deploy(FEE, communities.address, FEE, fund.address);
+  await incentives.deployed();
+  console.log("Tgether Incentives contract deployed to:", incentives.address);
+
+  // 16. Deploy Consensus Bounty Contract
+  const ConsensusBounty = await hre.ethers.getContractFactory("tgetherConsensusBounty");
+  const consensusBounty = await ConsensusBounty.deploy(fund.address, postsConsensus.address, communityConsensus.address, incentives.address, FEE);
+  await consensusBounty.deployed();
+  console.log("Consensus Bounty contract deployed to:", consensusBounty.address);
+
+  // 17. Deploy Tgether Parameter Group Registry
+  const ParameterGroupRegistry = await hre.ethers.getContractFactory("tgetherParameterGroupRegistry");
+  const parameterGroupRegistry = await ParameterGroupRegistry.deploy();
+  await parameterGroupRegistry.deployed();
+  console.log("Tgether Parameter Group Registry deployed to:", parameterGroupRegistry.address);
+
+  // 18. Deploy Community Enrollment Contract
+  const CommunityEnrollment = await hre.ethers.getContractFactory("CommunityEnrollment");
+  const communityEnrollment = await CommunityEnrollment.deploy(parameterGroupRegistry.address, communities.address);
+  await communityEnrollment.deployed();
+  console.log("Community Enrollment contract deployed to:", communityEnrollment.address);
+
+  // 19. Call setCommunityEnrollmentContract on Tgether Parameter Group Registry
+  await parameterGroupRegistry.setCommunityEnrollmentContract(communityEnrollment.address);
+  console.log("Tgether Parameter Group Registry updated with Community Enrollment contract address.");
+
+  // 20. Deploy Members Info Contract
+  const MemberInfo = await hre.ethers.getContractFactory("tgetherMembersInfo");
+  const memberInfo = await MemberInfo.deploy();
+  await memberInfo.deployed();
+  console.log("Members Info contract deployed to:", memberInfo.address);
+
+  // Automation and Chainlink registration (steps 21 to 30)
+  // These steps would involve interacting with Chainlink Automation, which is not done directly in this script.
+  // You will need to register each contract (Lane, Incentives, etc.) with Chainlink's Keepers Upkeep service.
+  // This can be done using the Chainlink UI or Chainlink SDK for automating the process.
+
+  console.log("All contracts deployed successfully and configurations set!");
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

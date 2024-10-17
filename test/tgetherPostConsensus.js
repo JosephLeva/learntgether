@@ -25,6 +25,7 @@ const ccfeeAmount = ethers.utils.parseEther("0.5"); // Replace "1" with the actu
 describe("tgether Post Consensus Contract", function() {
   let tgr
   let tgs
+  let auto;
   let owner;
   let addr1;
   let addr2;
@@ -34,7 +35,7 @@ describe("tgether Post Consensus Contract", function() {
   let addrs;
 
   beforeEach(async function() {
-    [owner, addr1, addr2,addr3,addr4,addr5, ...addrs] = await ethers.getSigners();
+    [owner, auto, addr1, addr2,addr3,addr4,addr5, ...addrs] = await ethers.getSigners();
     const mockFeePrice = ethers.utils.parseEther("1"); // Example fee 
     
     const tgetherMem = await ethers.getContractFactory("tgetherMembers");
@@ -46,7 +47,7 @@ describe("tgether Post Consensus Contract", function() {
     await tgf.deployed();
 
     const tgetherCom = await ethers.getContractFactory("tgetherCommunities");
-    tgc = await tgetherCom.deploy(mockFeePrice, tgf.address);
+    tgc = await tgetherCom.deploy(mockFeePrice);
     await tgc.deployed();
 
 
@@ -77,8 +78,24 @@ describe("tgether Post Consensus Contract", function() {
 
 
     const tgetherPostCon = await ethers.getContractFactory("tgetherPostConsensus");
-    tgpc = await tgetherPostCon.deploy(tgcc.address, tgm.address, tgp.address, feeAmount, tgf.address );
+    tgpc = await tgetherPostCon.deploy(tgcc.address, tgm.address, tgp.address, feeAmount );
     await tgcc.deployed();    
+   
+    // Deploy LaneRegistry with tgetherCommunities as the intakeContract (Step 3)
+    const LaneRegistry = await ethers.getContractFactory("LaneRegistry");
+    laneRegistry = await LaneRegistry.deploy(tgpc.address);
+    await laneRegistry.deployed();
+
+    // Deploy CommunitiesLane with required addresses (Step 4)
+    const Lane = await ethers.getContractFactory("PostConsensusLane");
+    lane1 = await Lane.deploy(tgf.address, tgpc.address, laneRegistry.address, );
+    await lane1.deployed();
+    
+    await lane1.connect(owner).setForwarder(auto.address);
+
+
+    // Set required contracts in tgetherCommunities
+    await tgpc.connect(owner).setLaneRegistry(laneRegistry.address);
 
 
   });
@@ -94,14 +111,14 @@ describe("tgether Post Consensus Contract", function() {
         const _balance2 = await ethers.provider.getBalance(tgf.address);
 
         expect(cs[0]).to.equal(communityName);
-        expect(cs[1]).to.equal("Consensous Pending");
+        expect(cs[3]).to.equal(1);
         expect(_balance2).to.equal(_balance1.add(feeAmount));
      });
      it("Should submit a post to a community without consensus", async function() {
         await tgpc.connect(addr1).submitToCommunity(1, "No Consensous Community");
         const cs = await tgpc.connect(addr1).getCommunitySubmission(1);
         expect(cs[0]).to.equal("No Consensous Community");
-        expect(cs[1]).to.equal("No Consensous");
+        expect(cs[3]).to.equal(0);
      });
 
      it("Should Fail for consensus community without fee", async function() {
@@ -143,72 +160,112 @@ describe("Reviews", function() {
 
 });
 
-describe("CheckUpkeep", function() {
-
+describe("PostConsensusLane CheckUpkeep", function() {
     beforeEach(async function() {
-        await tgpc.connect(addr1).submitToCommunity(1, communityName, {value: feeAmount});
-        await tgpc.connect(owner).submitReview(1, "Endpoint for review.com/thissicool", 2);
+        // Submit post to community via lane
+        await tgpc.connect(addr1).submitToCommunity(1, communityName, { value: feeAmount });
 
+        // Submit a review for the first post
+        await tgpc.connect(owner).submitReview(1, "Endpoint for review.com/thisiscool", 2);
     });
 
     it("Should not check upkeep because not enough time has passed", async function() {
-        
-       const data=  await tgpc.connect(addr1).checkUpkeep('0x');
-       expect(data[0]).to.equal(false)
+        // Call checkUpkeep via the lane contract
+        const data = await lane1.connect(addr1).checkUpkeep('0x');
+
+        // Verify that upkeep is not needed because time hasn't passed
+        expect(data[0]).to.equal(false);
     });
 
     it("Should check upkeep on first article and accept", async function() {
+        // Simulate the passage of time to trigger upkeep
         await network.provider.send("evm_increaseTime", [consensusTime]);
         await network.provider.send("evm_mine");
-        const data=  await tgpc.connect(addr1).checkUpkeep('0x');
-        expect(data[0]).to.equal(true)
-        expect(data[1]).to.equal("0x0000000000000000000000000000000000000000000000000000000000000001")
-     });
-     it("Should check upkeep on the article and reject", async function() {
 
-        await tgpc.connect(addr1).submitReview(1, "Endpoint for review.com/thissicool", 3);
-        await tgpc.connect(addr2).submitReview(1, "Endpoint for review.com/thissicool", 3);
+        // Call checkUpkeep via the lane contract after the time has passed
+        const data = await lane1.connect(addr1).checkUpkeep('0x');
+
+        // Verify that upkeep is needed and matches the first submission
+        expect(data[0]).to.equal(true);
+        expect(data[1]).to.equal("0x0000000000000000000000000000000000000000000000000000000000000001");
+    });
+
+    it("Should check upkeep on the article and reject", async function() {
+        // Submit additional reviews to ensure the post gets rejected
+        await tgpc.connect(addr1).submitReview(1, "Endpoint for review.com/thisiscool", 3);
+        await tgpc.connect(addr2).submitReview(1, "Endpoint for review.com/thisiscool", 3);
+
+        // Simulate the passage of time to trigger upkeep
         await network.provider.send("evm_increaseTime", [consensusTime]);
         await network.provider.send("evm_mine");
-        const data=  await tgpc.connect(addr1).checkUpkeep('0x');
-        expect(data[0]).to.equal(true)
-        expect(data[1]).to.equal("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
-     });
+
+        // Call checkUpkeep via the lane contract
+        const data = await lane1.connect(addr1).checkUpkeep('0x');
+
+        // Verify that upkeep is needed and the post is rejected
+        expect(data[0]).to.equal(true);
+        expect(data[1]).to.equal("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+    });
 });
 
 
-describe("performUpkeep", function() {
+
+describe("PostConsensusLane performUpkeep", function() {
+    
     beforeEach(async function() {
-        await tgpc.connect(addr1).submitToCommunity(1, communityName, {value: feeAmount});
-        await tgpc.connect(owner).submitReview(1, "Endpoint for review.com/thissicool", 2);
+
+        // Submit post to community via PostConsensus contract
+        await tgpc.connect(addr1).submitToCommunity(1, communityName, { value: feeAmount });
+
+        // Submit a review for the first post
+        await tgpc.connect(owner).submitReview(1, "Endpoint for review.com/thisiscool", 2);
     });
 
     it("Should not perform upkeep because not enough time has passed", async function() {
-        await tgpc.connect(owner).performUpkeep("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        // Attempt to perform upkeep through the lane contract with automation forwarder
+        await expect(
+            lane1.connect(auto).performUpkeep("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+        ).to.be.revertedWith("Upkeep not needed for this submission");
+
+        // Verify that the submission has not been updated yet
         const csub = await tgpc.connect(addr1).getCommunitySubmission(1);
-        expect(csub[0]).to.equal(communityName);
-        expect(csub[1]).to.equal("Consensous Pending"); 
+        expect(csub.communityName).to.equal(communityName);
+        expect(csub.consensus).to.equal(1);  // Still in pending state
     });
     
     it("Should Accept the Submission", async function() {
+        // Simulate the passage of time to trigger upkeep
         await network.provider.send("evm_increaseTime", [consensusTime]);
         await network.provider.send("evm_mine");
-        await tgpc.connect(owner).performUpkeep("0x0000000000000000000000000000000000000000000000000000000000000001");
+
+        // Perform upkeep using the automation forwarder
+        await lane1.connect(auto).performUpkeep("0x0000000000000000000000000000000000000000000000000000000000000001");
+
+        // Verify that the submission is now accepted
         const csub = await tgpc.connect(addr1).getCommunitySubmission(1);
-        expect(csub[0]).to.equal(communityName);
-        expect(csub[1]).to.equal("Accepted"); 
+        expect(csub.communityName).to.equal(communityName);
+        expect(csub.consensus).to.equal(2);  // Consensus is now "Accepted"
     });
 
-            
     it("Should Reject the Submission", async function() {
+        // Submit additional reviews to reject the post
+        await tgpc.connect(addr1).submitReview(1, "Endpoint for review.com/thisiscool", 3);
+        await tgpc.connect(addr2).submitReview(1, "Endpoint for review.com/thisiscool", 3);
+
+        // Simulate the passage of time to trigger upkeep
         await network.provider.send("evm_increaseTime", [consensusTime]);
         await network.provider.send("evm_mine");
-        await tgpc.connect(owner).performUpkeep("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+
+        // Perform upkeep using the automation forwarder
+        await lane1.connect(auto).performUpkeep("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+
+        // Verify that the submission is now rejected
         const csub = await tgpc.connect(addr1).getCommunitySubmission(1);
-        expect(csub[0]).to.equal(communityName);
-        expect(csub[1]).to.equal("Rejected"); 
+        expect(csub.communityName).to.equal(communityName);
+        expect(csub.consensus).to.equal(3);  // Consensus is now "Rejected"
     });
 });
+
 
 describe("Manual Upkeep", function() {
     beforeEach(async function() {
@@ -242,7 +299,7 @@ describe("Manual Upkeep", function() {
 
         // Expect the submission to be accepted
         expect(csub[0]).to.equal(communityName);
-        expect(csub[1]).to.equal("Accepted");
+        expect(csub[3]).to.equal(2);
     });
 
     it("Should perform manual upkeep and reject the submission if reviews do not meet acceptance criteria", async function() {
@@ -260,7 +317,7 @@ describe("Manual Upkeep", function() {
 
         // Expect the submission to be rejected
         expect(csub[0]).to.equal(communityName);
-        expect(csub[1]).to.equal("Rejected");
+        expect(csub[3]).to.equal(3);
     });
 
     it("Should prevent manual upkeep with incorrect results encoding", async function() {

@@ -1,0 +1,73 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "tgetherIncentivesInterface",
+  "sourceName": "contracts/tgetherConsensusBounty.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_communityName",
+          "type": "string"
+        }
+      ],
+      "name": "getCommunityFeeInfo",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "_communityFee",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_contractRecieveAddress",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_communityName",
+          "type": "string"
+        }
+      ],
+      "name": "getIncentiveParamsExist",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "_isSet",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_communityName",
+          "type": "string"
+        }
+      ],
+      "name": "getInctiveStructure",
+      "outputs": [
+        {
+          "internalType": "enum tgetherIncentivesInterface.IncentiveStructure",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

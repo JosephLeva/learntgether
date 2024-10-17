@@ -2,7 +2,7 @@ const { expect } = require("chai");
 
 
 
-describe("tgether Reviewers Contract", function() {
+describe("tgether Members Info Contract", function() {
   let tgr
   let tgs
   let owner;

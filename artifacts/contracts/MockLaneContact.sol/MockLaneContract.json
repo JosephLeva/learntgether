@@ -1,0 +1,86 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "MockLaneContract",
+  "sourceName": "contracts/MockLaneContact.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "appendToLane",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getLaneLength",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "laneLength",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "performUpkeep",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "registry",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "laneId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "newLength",
+          "type": "uint256"
+        }
+      ],
+      "name": "reportLaneLengthToRegistry",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60808060405234610016576101b5908161001b8239f35b5f80fdfe608060408181526004361015610013575f80fd5b5f91823560e01c9081636e4d243a146101685781638880c731146100cb57508063a30fcf24146100af578063a993983b146100755763b4e6011c14610056575f80fd5b34610071578160031936011261007157602091549051908152f35b5080fd5b506020366003190112610071578154906001820180921161009b57816020935551908152f35b634e487b7160e01b83526011600452602483fd5b5034610071578160031936011261007157602091549051908152f35b9190503461016457606036600319011261016457826004356001600160a01b0381169081900361007157604435808355813b156101645784838193604493632e6cfb9160e11b8452602435600485015260248401525af1801561015a57610130578280f35b67ffffffffffffffff821161014657525f808280f35b634e487b7160e01b83526041600452602483fd5b81513d85823e3d90fd5b8280fd5b833461017c578060031936011261017c5780f35b80fdfea26469706673582212206aa3de5a40f487ffec61f66ffad85344ebfba3b9da54bdb12d8d7b3692b081af64736f6c63430008140033",
+  "deployedBytecode": "0x608060408181526004361015610013575f80fd5b5f91823560e01c9081636e4d243a146101685781638880c731146100cb57508063a30fcf24146100af578063a993983b146100755763b4e6011c14610056575f80fd5b34610071578160031936011261007157602091549051908152f35b5080fd5b506020366003190112610071578154906001820180921161009b57816020935551908152f35b634e487b7160e01b83526011600452602483fd5b5034610071578160031936011261007157602091549051908152f35b9190503461016457606036600319011261016457826004356001600160a01b0381169081900361007157604435808355813b156101645784838193604493632e6cfb9160e11b8452602435600485015260248401525af1801561015a57610130578280f35b67ffffffffffffffff821161014657525f808280f35b634e487b7160e01b83526041600452602483fd5b81513d85823e3d90fd5b8280fd5b833461017c578060031936011261017c5780f35b80fdfea26469706673582212206aa3de5a40f487ffec61f66ffad85344ebfba3b9da54bdb12d8d7b3692b081af64736f6c63430008140033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

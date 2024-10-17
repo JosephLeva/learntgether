@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
+import "hardhat/console.sol";
 
 
 
@@ -27,13 +28,22 @@ interface tgetherFundInterface{
         function fundUpkeep(address _contractAddress) external payable returns (bool);
     }
 
-contract tgetherPostConsensus is AutomationCompatibleInterface{
+interface laneRegistryInterface{
+    function appendToLane(uint256 proposalId) external payable returns (uint256);
+    function getLaneContractAddress(uint256 laneId) external view returns (address);
+}
+interface LaneContractInterface{
+    function removePost(uint256 proposalId) external;
+    function getpostIndex(uint256 postId) external view returns (uint256); 
+}
+contract tgetherPostConsensus{
+    enum Consensus { NotProcessed, Pending, Accepted, Rejected }
 
     struct CommunitySubmission{
         string communityName;
-        string consensusType; 
         uint256 timestamp;
         uint256 consensusTime;
+        Consensus consensus;
     }
     mapping(uint256=> CommunitySubmission) public CommunitySubmissions; //csCounter=> SubjectSubmission
     mapping (uint256=>uint256) public CommunitySubmissionToPost; // communitySubmissionId => postID
@@ -45,7 +55,7 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
     // mapping allows us to retrieve the post submissions for a specific community
     mapping(uint256=> mapping(string => uint256)) public postCommunities; // postId => communityName => communitySubmissionId
 
-
+    mapping(uint256=> uint256) public SubmissionLane; //communitySubmissionId => laneId
 
     struct Review{
         address member;
@@ -66,13 +76,6 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
 
     string[] defaultConsenousTypes = [ "Consensous Pending", "Accepted", "Rejected"];
 
-    // array of active reviews ordered off chain by timestamp
-    uint256[] public ActiveSubmissions;
-
-    // holds index information outside of asset
-    mapping(uint256=> uint256) public ActiveSubmissionsIndexes; //SubjectSubmissionsId => index in ActiveSubmissions array
-
-
     // mapping allows us to track if someone has already reviewed a post (avoid spam)
     mapping(uint256 => mapping(address => bool)) public hasReviewed; //communitySubmissionId => memberAddress => bool
 
@@ -83,27 +86,21 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
     tgetherCommunityConsensusInterface public CommunityConsensusContract; 
     tgetherMembersInterface public MembersContract; 
     tgetherPostsInterface public PostsContract;
+    
+    address laneRegistry;
 
     uint256 public consensusFee;
 
     uint256 public maxReviews;  //We have a max reviews value to ensure to avoid spam reviews clogging active proposals
     address owner;
-    tgetherFundInterface public FundContract;
 
-
-        // Modifiers
-
-    modifier ownerOrAutomation() {
-        require(msg.sender == owner || msg.sender == AutomationContractAddress, "Not the contract owner or Automation Forwarder Contract");
-        _;
-    }   
 
     modifier ownerOnly() {
         require(msg.sender == owner, "Not the contract owner");
         _;
     }   
 
-    constructor(address _CommunityConsensusAddress, address _MembersContract, address _PostContract, uint256 _fee, address  _fundAddress ) {
+    constructor(address _CommunityConsensusAddress, address _MembersContract, address _PostContract, uint256 _fee ) {
         owner= msg.sender;
 
         CommunityConsensusContract= tgetherCommunityConsensusInterface(_CommunityConsensusAddress);
@@ -111,14 +108,11 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
         PostsContract= tgetherPostsInterface(_PostContract);
 
         consensusFee = _fee;
-        FundContract = tgetherFundInterface(_fundAddress);
 
         reviewCounter= 1;
         csCounter = 1;
-        // so no indexes can be 0
-        ActiveSubmissions.push(0);
-        maxReviews = 100;
 
+        maxReviews = 100;
 
 
     }
@@ -133,7 +127,6 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
     event ReviewCreated(uint256 indexed reviewId, uint256 indexed communitySubmissionId, address indexed member);
     event ReviewSubmitted(uint256 indexed reviewId, string consensus, uint256 creds, string content, bool afterConsensus);
     event ConsensusUpdated(uint256 indexed communitySubmissionId, uint256 postId, string newConsensus);
-    event ActiveSubmissionsIndexUpdated(uint256 communitySubmissionId, uint256 index);
     event Keywords(uint256 postId, string keyword);
 
     
@@ -160,52 +153,46 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
     * processing of your upkeep.
     */
 
-   function submitToCommunity(uint256 _postId, string memory _communityName) external payable returns (uint256 )  {
-        // Check if the post exists
-        require(PostsContract.getPostExists(_postId), "Post does not exist");
-        require(CommunityConsensusContract.getCCParamsExist(_communityName), "Community Consensus Params don't exist");
-        uint256 consensusTime = CommunityConsensusContract.getCommunityConsensousTime(_communityName);
+function submitToCommunity(uint256 _postId, string memory _communityName) external payable returns (uint256 )  {
+    // Check if the post exists
+    require(PostsContract.getPostExists(_postId), "Post does not exist");
+    require(CommunityConsensusContract.getCCParamsExist(_communityName), "Community Consensus Params don't exist");
+    uint256 consensusTime = CommunityConsensusContract.getCommunityConsensousTime(_communityName);
 
-        CommunitySubmission memory newCommunitySubmission = CommunitySubmission({
-            communityName: _communityName,
-            timestamp: block.timestamp,
-            consensusTime: consensusTime,
-            consensusType: ""
-        });
+    CommunitySubmission memory newCommunitySubmission = CommunitySubmission({
+        communityName: _communityName,
+        timestamp: block.timestamp,
+        consensusTime: consensusTime,
+        consensus: Consensus.Pending
+    });
 
-        if (consensusTime == 0 ){
-            // create a new community submission where no active conesouse is needed default consesous type is "No Review"
-            newCommunitySubmission.consensusType= "No Consensous";
-        } else{
-            //  we only charge a fee if a consensus is Needed
-            require(msg.value == consensusFee, "Must send proposal fee");
+    if (consensusTime == 0 ){
+        // Create a new community submission where no active consensus is needed
+        newCommunitySubmission.consensus = Consensus.NotProcessed;
 
-        bool _isFunded = FundContract.fundUpkeep{value: msg.value}(address(this));
-        if (_isFunded) {
-            newCommunitySubmission.consensusType= defaultConsenousTypes[0];
-            // Add the post to the active reviews array
-            ActiveSubmissions.push(csCounter);
-            ActiveSubmissionsIndexes[csCounter] = ActiveSubmissions.length - 1;
-            emit ActiveSubmissionsIndexUpdated(csCounter, ActiveSubmissions.length - 1);
-        }
-        }
-
-        // Set Various Search Mappings
-        CommunitySubmissions[csCounter] = newCommunitySubmission;
-        PostSubmissionList[_postId].push(csCounter);
-        CommunitySubmissionToPost[csCounter] = _postId;
-        postCommunities[_postId][_communityName] = csCounter;
-
-        emit PostSubmission(_postId, csCounter);
-
-        emit CommunitySubmitted(csCounter, _communityName, block.timestamp, consensusTime);
-
-        csCounter++;
-
-        return csCounter-1;
-
-
+    } else {
+        // Charge a fee if consensus is needed
+        require(msg.value == consensusFee, "Must send proposal fee");
+        uint256 laneId = laneRegistryInterface(laneRegistry).appendToLane{value: msg.value}(csCounter);
+        SubmissionLane[csCounter] = laneId;
     }
+
+    // Use newCsCounter to store the current counter value and update mappings
+    uint256 newCsCounter = csCounter;
+    CommunitySubmissions[newCsCounter] = newCommunitySubmission;
+    PostSubmissionList[_postId].push(newCsCounter);
+    postCommunities[_postId][_communityName] = newCsCounter;
+
+    // Increment csCounter only once after all operations
+    csCounter++;
+
+    // Emit events using newCsCounter
+    emit PostSubmission(_postId, newCsCounter);
+    emit CommunitySubmitted(newCsCounter, _communityName, block.timestamp, consensusTime);
+
+    return newCsCounter;
+}
+
 
 
     /*
@@ -245,9 +232,9 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
             consensusType = consensusTypes[_consensus - defaultConsenousTypes.length - 1]; // Adjust index by 1
         }
 
-        bool _afterConsensus = false;
+        bool _afterConsensus;
         
-        if (block.timestamp >= CommunitySubmissions[_communitySubmissionId].timestamp + CommunitySubmissions[_communitySubmissionId].consensusTime) {
+        if (CommunitySubmissions[_communitySubmissionId].consensus != Consensus.Pending) {
             _afterConsensus = true;
         }
 
@@ -321,7 +308,10 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
 
         // Loop through the reviews to count the number of accepted and total reviews
         for (uint256 i = 0; i < upperbound; i++) {
-            (uint256 reviewConsensus, uint256 reviewCreds) = this.getReviewConsenous(reviewList[i]);
+            (uint256 reviewConsensus, uint256 reviewCreds, bool _afterConsensus) = this.getReviewConsenous(reviewList[i]);
+            if (_afterConsensus) {
+                continue;
+            }
             if (reviewCreds >= credsNeededForReview) {
                 totalCount++;
                 if (reviewConsensus == 2) { // Assuming 2 indicates "Accepted"
@@ -352,74 +342,37 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
         if (
             submissionId != 0 &&
             block.timestamp >= CommunitySubmissions[submissionId].timestamp + CommunitySubmissions[submissionId].consensusTime &&
-            CommunitySubmissions[submissionId].timestamp != 0 &&
-            ActiveSubmissionsIndexes[submissionId] != 0
+            CommunitySubmissions[submissionId].timestamp != 0
         ) {
-            CommunitySubmissions[submissionId].consensusType = isAccepted ? defaultConsenousTypes[1] : defaultConsenousTypes[2];
-            emit ConsensusUpdated(submissionId, CommunitySubmissionToPost[submissionId], CommunitySubmissions[submissionId].consensusType);
+            CommunitySubmissions[submissionId].consensus = isAccepted ? Consensus.Accepted : Consensus.Rejected;
+            emit ConsensusUpdated(submissionId, CommunitySubmissionToPost[submissionId], CommunitySubmissions[submissionId].consensus == Consensus.Accepted ? "Accepted" : "Rejected");
 
-            // Swap and pop logic for removing the submission from active submissions
-            uint256 index = ActiveSubmissionsIndexes[submissionId];
-            if (index != ActiveSubmissions.length - 1) {
-                ActiveSubmissions[index] = ActiveSubmissions[ActiveSubmissions.length - 1];
-                ActiveSubmissionsIndexes[ActiveSubmissions[ActiveSubmissions.length - 1]] = index;
-                emit ActiveSubmissionsIndexUpdated(ActiveSubmissions[index], index);
-            }
-            ActiveSubmissionsIndexes[submissionId] = 0;
-            ActiveSubmissions.pop();
+            // Remove the submission from the active list
+
+        }else {
+            revert("Upkeep not needed for this submission");
         }
     }
 
-    // Automated checkUpkeep function
-    /*
-     * @notice Checks if there are any submissions that need upkeep based on their review periods.
-     * @param checkData Additional data passed to the function (not used in this implementation).
-     * @return upkeepNeeded A boolean indicating if upkeep is needed.
-     * @return performData Encoded data indicating the submission ID to be processed during performUpkeep.
-     */
 
-    function checkUpkeep(bytes calldata /* checkData */)
-        external
-        view
-        override
-        returns (bool upkeepNeeded, bytes memory performData)
-    {
-        upkeepNeeded = false;
-        uint256 lowestId = 0;
-
-        if (ActiveSubmissions.length > 0) {
-            uint256 lowestTimestamp = 0;
-
-            // Find the lowest expired submission
-            for (uint256 i = 1; i < ActiveSubmissions.length; i++) {
-                uint256 submissionId = ActiveSubmissions[i];
-                uint256 reviewPeriodExpired = CommunitySubmissions[submissionId].timestamp + CommunitySubmissions[submissionId].consensusTime;
-
-                // Ensure review period is expired and is the lowest in the list
-                if (reviewPeriodExpired <= block.timestamp && (reviewPeriodExpired <= lowestTimestamp || lowestTimestamp == 0)) {
-                    upkeepNeeded = true;
-                    lowestId = submissionId;
-                    lowestTimestamp = reviewPeriodExpired;
-                }
-            }
-
-            int256 resultId;
-
-            if (lowestId != 0) {
-                (upkeepNeeded,resultId) = _checkSubmissionForUpkeep(lowestId);
-                performData = abi.encode(resultId);
-            }
-        }
-    }
-
-    // Automated performUpkeep function
+  
     /**
      * @notice Performs the upkeep on a specific submission based on the result data from checkUpkeep.
      * @param performData Encoded data containing the submission result ID (positive for accepted, negative for rejected).
      */
-    function performUpkeep(bytes calldata performData) external ownerOrAutomation {
+    function performUpkeep(bytes calldata performData) external {
         require(performData.length == 32, "Invalid performData length");
         int256 resultId = abi.decode(performData, (int256));
+        uint256 _submissionId;
+        if(resultId < 0) {
+            _submissionId = uint256(-resultId);
+        }else{
+            _submissionId = uint256(resultId);
+        }
+        address lane = laneRegistryInterface(laneRegistry).getLaneContractAddress(SubmissionLane[_submissionId]);
+        require(msg.sender == lane, "Only lane contract can perform upkeep");
+        require(LaneContractInterface(lane).getpostIndex(_submissionId) >= 0, "Submission does not exist in lane");
+
         _performSubmissionUpkeep(resultId);
     }
 
@@ -428,11 +381,10 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
      * @notice Manually processes upkeep for a specific submission to update its consensus status.
      * @param submissionId The ID of the submission to manually process for upkeep.
      */
-    function manualUpkeepPost(uint256 submissionId) external ownerOrAutomation {
+    function manualUpkeepPost(uint256 submissionId) external {
         require(submissionId != 0, "Invalid submission ID");
         require(
-            CommunitySubmissions[submissionId].timestamp != 0 && 
-            ActiveSubmissionsIndexes[submissionId] != 0, 
+            CommunitySubmissions[submissionId].timestamp != 0,
             "Submission does not exist or is not active"
         );
 
@@ -443,8 +395,19 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
 
         // Perform upkeep manually
         _performSubmissionUpkeep(resultId);
+        uint256 _submissionId;
+        if(resultId < 0) {
+            _submissionId = uint256(-resultId);
+        }else{
+            _submissionId = uint256(resultId);
+        }
+        address lane = laneRegistryInterface(laneRegistry).getLaneContractAddress(SubmissionLane[_submissionId]);
+        LaneContractInterface(lane).removePost(_submissionId);
     }
 
+    function getCheckSubmissionForUpkeep(uint256 submissionId) external view returns (bool upkeepNeeded, int256 resultId) {
+        return _checkSubmissionForUpkeep(submissionId);
+    }
 
 
 
@@ -457,34 +420,36 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
     function getCommunitySubmission(uint256 _communitySubmissionId) external view returns(CommunitySubmission memory){
         return CommunitySubmissions[_communitySubmissionId];
     }
-    function getReviewsForSubmission(uint256 _submissionId) public view returns (uint256[] memory) {
+    function getReviewsForSubmission(uint256 _submissionId) external view returns (uint256[] memory) {
         return submmisionReviews[_submissionId];
     }
     function getPostSubmissionList(uint256 _postId) public view returns (uint256[] memory) {
         return PostSubmissionList[_postId];
     }
-    function getPostConsesous(uint256 _submissionId) public view returns (string memory consensus) {
+    function getPostConsesous(uint256 _submissionId) external view returns (Consensus) {
         require(CommunitySubmissions[_submissionId].timestamp != 0, "Submission does not exist");
-        return CommunitySubmissions[_submissionId].consensusType;
-    }
-    function getActiveSubmissions() external view returns(uint256[] memory){
-        return ActiveSubmissions;
-    }
-
-    function getActiveSubmissionsLength() external view returns(uint256){
-        return ActiveSubmissions.length;
+        return CommunitySubmissions[_submissionId].consensus;
     }
     function getReview(uint256 _reviewId) external view returns(Review memory){
         return reviews[_reviewId];
     }
 
+    function getReviewConsenous(uint256 _reviewid) external view returns(uint256 consensus, uint256 creds, bool afterConsensus){
+        return(reviews[_reviewid].consensus, reviews[_reviewid].creds, reviews[_reviewid].afterConsensus);
+    }
 
-    function getActiveSubmissionsIndex(uint256 _postId) external view returns(uint256){
-        return ActiveSubmissionsIndexes[_postId];
+    function getPostSubmissionCommunity(uint256 _postId) external view returns(string memory){
+        return CommunitySubmissions[_postId].communityName;
     }
-    function getReviewConsenous(uint256 _reviewid) external view returns(uint256 consensus, uint256 creds){
-        return(reviews[_reviewid].consensus, reviews[_reviewid].creds);
+    function getPostSubmissionConsensus(uint256 _postId) external view returns(string memory){
+        return CommunitySubmissions[_postId].communityName;
     }
+
+    function getSubmissionExpiration(uint256 _submissionId) external view returns(uint256){
+        return CommunitySubmissions[_submissionId].timestamp + CommunitySubmissions[_submissionId].consensusTime;
+    }
+
+
 
 
     // Only Owner Funcitons
@@ -524,15 +489,9 @@ contract tgetherPostConsensus is AutomationCompatibleInterface{
 
     }
 
-
-    function setFundContract(address _contract) external ownerOnly {
-       FundContract= tgetherFundInterface(_contract);
-
+    function setLaneRegistry(address _contract) external ownerOnly {
+        laneRegistry= _contract;
     }
-
-
-
-
 
 
 

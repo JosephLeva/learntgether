@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 ---
 
 # Understanding Fee Collection, Swaps, and Upkeep Management

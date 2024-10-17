@@ -2,7 +2,7 @@ const { expect } = require("chai");
 
 const feeAmount = ethers.utils.parseEther("1"); // Replace "1" with the actual fee amount
 
-describe("tgether Reviewers Contract", function() {
+describe("tgether Posts Contract", function() {
   let tgr
   let tgs
   let owner;
