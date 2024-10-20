@@ -15,9 +15,9 @@ The following are the current production contract addresses for the Learn Togeth
 | Members Info Contract        | `0x679de0Ed2EAfA7044B04abD465300370a3085A8b` |
 | Community Consensus Contract | `0x263B77866b4fE287f33F48bb97E12CD13DDFe883` |
 | Posts Contract               | `0x1Dc3c742d9dFe008224291bEd882B07A5d4e1209` |
-| Posts Consensus Contract     | `0x861cd351754AE2E54096885721E8DD700287DE4F` |
+| Posts Consensus Contract     | `0xFc7297D17EB349368B22198fE85BabEEffaD1eA4` |
 | Incentives Contract          | `0xA1E68fBB1c6F0A9a805858eAE0D3F19Ab8FfA449` |
-| Consensus Bounty Contract    | `0xF8cFeE94871Cc54730e8fF0Af42a363014CE6F83` |
+| Consensus Bounty Contract    | `0xfC7678b850008Fad51D127a324dEbB6386DeCd90` |
 | Paramter Group Registry      | `0x8dddbC38d3129C42B638DB95fa5A92537ee23e74` |
 | Community Enrollment         | `0xa8453e31B66f26ef1045AfDda309204F0A740CE9` |
 

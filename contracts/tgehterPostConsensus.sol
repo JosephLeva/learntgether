@@ -181,6 +181,7 @@ function submitToCommunity(uint256 _postId, string memory _communityName) extern
     uint256 newCsCounter = csCounter;
     CommunitySubmissions[newCsCounter] = newCommunitySubmission;
     PostSubmissionList[_postId].push(newCsCounter);
+    CommunitySubmissionToPost[newCsCounter] = _postId;
     postCommunities[_postId][_communityName] = newCsCounter;
 
     // Increment csCounter only once after all operations
