@@ -9,7 +9,7 @@ async function main() {
   const FEE = 100000000000000;
 
   // 1. Deploy Fund Contract
-  const Fund = await hre.ethers.getContractFactory("tgetherFundTest");
+  const Fund = await hre.ethers.getContractFactory("tgetherFund");
   const fund = await Fund.deploy();
   await fund.deployed();
   console.log("Fund contract deployed to:", fund.address);

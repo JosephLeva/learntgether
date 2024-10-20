@@ -10,16 +10,16 @@ The following are the current production contract addresses for the Learn Togeth
 
 | Contract Name                | Address                                    |
 |------------------------------|--------------------------------------------|
-| Communities Contract         | `0xCaDCf49c3B657c074e78DCCc7710d1b9154B17b0` |
-| Members Contract             | `0x77570D575919C9e4eb5d2F71E653a12d8E3187bB` |
-| Members Info Contract        | `0x179003406c9953f98Cd80E562ce68ae639970FD1` |
-| Community Consensus Contract | `0x66Dd38b5083F7f40354AB98C23316F53e8fd195b` |
-| Posts Contract               | `0xFF3E8E9E807407ca6eDcb1a7421599722985dF7a` |
-| Posts Consensus Contract     | `0x9B14A6f4a762328fc97aeddA5838b478c35561d6` |
-| Incentives Contract          | `0x8721A7d1B5C8934e172F07abEb376319170f05b3` |
-| Consensus Bounty Contract    | `0x1b7173F401a914FA87A38D62F1c65Eb1C6b053dc` |
-| Paramter Group Registry      | `0xB0749E0eF52F53b437DA3d426Dd971f9C2e28365` |
-| Community Enrollment         | `0xdeaE4F1425068e91e9C396629269C1996D4c820B` |
+| Communities Contract         | `0x778895E75bd57DbcC409aa9FB5ef402297eb9AcB` |
+| Members Contract             | `0xBF81C27d8e03a4f7ebDD5bC1De0A69285Ed79AAe` |
+| Members Info Contract        | `0x679de0Ed2EAfA7044B04abD465300370a3085A8b` |
+| Community Consensus Contract | `0x263B77866b4fE287f33F48bb97E12CD13DDFe883` |
+| Posts Contract               | `0x1Dc3c742d9dFe008224291bEd882B07A5d4e1209` |
+| Posts Consensus Contract     | `0x861cd351754AE2E54096885721E8DD700287DE4F` |
+| Incentives Contract          | `0xA1E68fBB1c6F0A9a805858eAE0D3F19Ab8FfA449` |
+| Consensus Bounty Contract    | `0xF8cFeE94871Cc54730e8fF0Af42a363014CE6F83` |
+| Paramter Group Registry      | `0x8dddbC38d3129C42B638DB95fa5A92537ee23e74` |
+| Community Enrollment         | `0xa8453e31B66f26ef1045AfDda309204F0A740CE9` |
 
 
 ## Arbitrum Sepollia 
